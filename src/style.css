@@ -324,7 +324,7 @@ body {
 
     /* 포스터 아래쪽으로 이동 */
     top: auto !important;
-    bottom: 10px !important;
+    bottom: -10px !important;
 
     transform: translateX(-50%) !important;
 
