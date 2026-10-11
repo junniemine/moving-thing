@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="
+      width=device-width,
+      initial-scale=1,
+      maximum-scale=1,
+      minimum-scale=1,
+      user-scalable=no,
+      viewport-fit=cover
+    "
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <title>Interactive Paper Poster</title>
+
+  <link
+    rel="stylesheet"
+    href="/src/style.css"
+  >
+</head>
+
+<body>
+
+  <main class="page">
+
+    <div class="poster-layout">
+
+      <!-- 힘 버튼: PNG 이미지 그대로 사용 -->
+      <div
+        id="powerControl"
+        class="power-control"
+      >
+
+        <img
+          src="/src/힘버튼.png"
+          alt="힘 조절 버튼"
+          draggable="false"
+        >
+
+        <!-- 이미지 위의 투명한 클릭 영역 -->
+        <button
+          id="minusButton"
+          class="power-hit minus"
+          type="button"
+          aria-label="힘 줄이기"
+        ></button>
+
+        <button
+          id="plusButton"
+          class="power-hit plus"
+          type="button"
+          aria-label="힘 높이기"
+        ></button>
+
+      </div>
+
+
+      <!-- 포스터 -->
+      <div
+        id="poster"
+        class="poster"
+      >
+
+        <!-- 종이를 뜯으면 드러나는 글씨 -->
+        <img
+          class="text-poster"
+          src="/src/커튼-16.jpg"
+          alt=""
+          draggable="false"
+        >
+
+        <!-- 종이 뜯기 및 커튼 -->
+        <canvas
+          id="paperCanvas"
+        ></canvas>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <script
+    type="module"
+    src="/src/main.js"
+  ></script>
+
+</body>
+</html>

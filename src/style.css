@@ -1,0 +1,308 @@
+/* =====================================
+   기본 설정
+===================================== */
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #ffffff;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* =====================================
+   전체 화면
+===================================== */
+
+.page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #ffffff;
+  touch-action: none;
+}
+
+/* =====================================
+   포스터 전체 레이아웃
+===================================== */
+
+.poster-layout {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  overflow: visible;
+
+  transform: translateY(-35px);
+}
+
+/* =====================================
+   힘 버튼
+===================================== */
+
+.power-control {
+  position: relative;
+
+  width: 100px;
+  height: auto;
+
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+
+  z-index: 100;
+}
+
+.power-control.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.power-control img {
+  display: block;
+  width: 110%;
+  height: auto;
+
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* =====================================
+   PNG 위의 투명 +/- 클릭 영역
+===================================== */
+
+.power-hit {
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+  width: 34%;
+
+  margin: 0;
+  padding: 0;
+
+  border: none;
+  border-radius: 0;
+  background: transparent;
+
+  cursor: pointer;
+  touch-action: manipulation;
+
+  z-index: 2;
+}
+
+.power-hit.minus {
+  left: 0;
+}
+
+.power-hit.plus {
+  right: 0;
+}
+
+/* =====================================
+   포스터
+===================================== */
+
+.poster {
+  position: relative;
+  width: auto;
+
+  height: min(
+    80dvh,
+    calc((100vw - 30px) * 1600 / 960)
+  );
+
+  aspect-ratio: 960 / 1600;
+  flex-shrink: 0;
+
+  overflow: hidden;
+  background: #ffffff;
+  touch-action: none;
+}
+
+/* =====================================
+   아래 글씨 포스터
+===================================== */
+
+.text-poster {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  object-fit: fill;
+  pointer-events: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+
+  z-index: 1;
+}
+
+/* =====================================
+   인터랙션 캔버스
+===================================== */
+
+#paperCanvas {
+  position: absolute;
+  inset: 0;
+
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  z-index: 10;
+
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* =====================================
+   모바일
+===================================== */
+
+@media (max-width: 700px) {
+
+  .poster-layout {
+    gap: 12px;
+    padding: 12px;
+    transform: translateY(-30px);
+  }
+
+  .power-control {
+    width: 100px;
+  }
+
+  .poster {
+    height: min(
+      78dvh,
+      calc((100vw - 24px) * 1600 / 960)
+    );
+  }
+}
+
+/* =====================================
+   작은 화면
+===================================== */
+
+@media (max-height: 650px) {
+  .poster {
+    height: min(
+      73dvh,
+      calc((100vw - 24px) * 1600 / 960)
+    );
+  }
+
+  .power-control {
+    width: 125px;
+  }
+}
+
+/* =====================================
+   CURTAIN IMAGE HINT
+
+   커튼 전환 후 PNG 이미지 표시
+   애니메이션 없음
+===================================== */
+
+.curtain-hint {
+  position: absolute;
+
+  /* 화면 가로 중앙 */
+  left: 50%;
+  bottom: 5px;
+
+  transform: translateX(-50%);
+
+  /* 이미지 크기 */
+  display: block;
+
+  width: min(340px, calc(100% - 32px));
+  height: auto;
+
+  min-height: 48px;
+
+  /* 원본 이미지 비율 유지 */
+  object-fit: contain;
+
+  margin: 0;
+  padding: 0;
+
+  /* 처음에는 숨김 */
+  opacity: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+
+  z-index: 20;
+
+  /* 움직임 제거 */
+  animation: none;
+  transition: none;
+}
+
+/* 커튼으로 전환되면 이미지 표시 */
+
+.curtain-hint.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 모바일 이미지 크기 */
+
+@media (max-width: 500px) {
+  .curtain-hint {
+    width: 180px;
+    bottom: -10px;
+  }
+}
