@@ -38,11 +38,15 @@ const minusButton =
    이미지 파일
 ========================================== */
 
-const POSTER_IMAGE =
-  "/src/처음화면.png";
+const POSTER_IMAGE = new URL(
+  "./처음화면.png",
+  import.meta.url
+).href;
 
-const MASK_IMAGE =
-  "/src/커튼.png";
+const MASK_IMAGE = new URL(
+  "./커튼.png",
+  import.meta.url
+).href;
 
 /* ==========================================
    CURTAIN AUDIO SYSTEM
@@ -54,7 +58,9 @@ const MASK_IMAGE =
 ========================================== */
 
 // 음악 파일
-const curtainAudio = new Audio("/src/창문.mp3");
+const curtainAudio = new Audio(
+  new URL("./창문.mp3", import.meta.url).href
+);
 
 curtainAudio.preload = "auto";
 curtainAudio.loop = false;
@@ -1983,7 +1989,10 @@ function showCurtainHint() {
   hintImage.id = "curtainHint";
   hintImage.className = "curtain-hint";
 
-  hintImage.src = "/src/볼륨(1).png";
+hintImage.src = new URL(
+  "./볼륨(1).png",
+  import.meta.url
+).href;
 
   hintImage.alt = "볼륨 안내";
   hintImage.draggable = false;
