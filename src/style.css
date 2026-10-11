@@ -257,7 +257,7 @@ body {
 
   /* 화면 가로 중앙 */
   left: 50%;
-  bottom: -22px;
+  bottom: -28px;
 
   transform: translateX(-50%);
 
