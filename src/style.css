@@ -303,7 +303,7 @@ body {
 @media (max-width: 500px) {
   .curtain-hint {
     width: 180px;
-    bottom: -10px;
+    bottom: -20px;
   }
 }
 
