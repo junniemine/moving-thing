@@ -306,3 +306,35 @@ body {
     bottom: -10px;
   }
 }
+
+/* 모바일 안내 이미지 */
+@media (max-width: 700px) {
+
+  .curtain-hint {
+    position: absolute !important;
+
+    /* 이미지 가로 크기 */
+    width: 160px !important;
+
+    /* 이미지 세로 크기 자동 */
+    height: auto !important;
+
+    /* 화면 가운데 정렬 */
+    left: 50% !important;
+
+    /* 포스터 아래쪽으로 이동 */
+    top: auto !important;
+    bottom: 10px !important;
+
+    transform: translateX(-50%) !important;
+
+    /* 이미지 비율 유지 */
+    object-fit: contain !important;
+
+    /* 다른 요소 위에 표시 */
+    z-index: 30 !important;
+
+    pointer-events: none;
+  }
+
+}

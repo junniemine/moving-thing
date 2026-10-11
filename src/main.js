@@ -87,35 +87,55 @@ function startCurtainAudio() {
 }
 
 // 커튼 움직임에 따른 음량 계산
+/* ==========================================
+   CURTAIN AUDIO SYSTEM
+
+   커튼을 많이 열수록 소리가 커짐
+   힘이 강할수록 소리도 더 커짐
+   커튼을 놓으면 무음
+   음악 시간은 계속 흐름
+========================================== */
+
 function updateCurtainAudio() {
 
   if (!curtainMode || !audioStarted) return;
 
-  // 커튼을 잡고 있지 않으면 무조건 무음
+  // 커튼을 놓으면 무음
   if (!dragging) {
     curtainAudio.muted = true;
     curtainAudio.volume = 0;
     return;
   }
 
-  // 커튼을 잡고 있으면 음소거 해제
   curtainAudio.muted = false;
 
+  // 힘이 강할수록 커튼이 더 크게 열림
   const pullStrength =
     1 + (power - 1) * 0.42;
 
+  // 실제 커튼이 열린 정도
   const opening =
     Math.abs(dragX) * pullStrength;
 
+  // 최대 열림 기준
   const maxOpening =
     IMAGE_WIDTH * 0.45;
 
-  const volume = Math.min(
+  // 커튼이 열린 비율 (0~1)
+  const openingRatio = Math.min(
     1,
     Math.max(0, opening / maxOpening)
   );
 
-  curtainAudio.volume = volume;
+  // 힘 단계에 따른 음량 증가
+  const powerBoost =
+    1 + (power - 1) * 0.15;
+
+  // 최종 음량
+  curtainAudio.volume = Math.min(
+    1,
+    openingRatio * powerBoost
+  );
 
 }
 
@@ -1990,7 +2010,7 @@ function showCurtainHint() {
   hintImage.className = "curtain-hint";
 
 hintImage.src = new URL(
-  "./볼륨(1).png",
+  "./volume.png",
   import.meta.url
 ).href;
 
