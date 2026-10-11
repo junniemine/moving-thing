@@ -129,7 +129,7 @@ function updateCurtainAudio() {
 
   // 힘 단계에 따른 음량 증가
   const powerBoost =
-    1 + (power - 1) * 0.15;
+    1 + (power - 1) * 0.3;
 
   // 최종 음량
   curtainAudio.volume = Math.min(
