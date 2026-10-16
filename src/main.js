@@ -32,8 +32,121 @@ const plusButton =
 
 const minusButton =
   document.querySelector("#minusButton");
+  
+/* ==========================================
+   POWER BUTTON CLICK FEEDBACK
+========================================== */
 
+function showTouchFeedback(event) {
+  const button = event.currentTarget;
 
+  const rect = button.getBoundingClientRect();
+  const controlRect = powerControl.getBoundingClientRect();
+
+  const x = rect.left + rect.width / 2 - controlRect.left;
+  const y = rect.top + rect.height / 2 - controlRect.top;
+
+  const ripple = document.createElement("span");
+
+  Object.assign(ripple.style, {
+    position: "absolute",
+    left: `${x}px`,
+    top: `${y}px`,
+    width: "18px",
+    height: "18px",
+    border: "1.5px solid white",
+    borderRadius: "50%",
+    boxShadow: "0 0 0 1px rgba(0,0,0,0.3)",
+    pointerEvents: "none",
+    zIndex: "50"
+  });
+
+  powerControl.appendChild(ripple);
+
+  ripple.animate(
+    [
+      {
+        transform: "translate(-50%, -50%) scale(0.5)",
+        opacity: 1
+      },
+      {
+        transform: "translate(-50%, -50%) scale(2.8)",
+        opacity: 0
+      }
+    ],
+    {
+      duration: 350,
+      easing: "ease-out"
+    }
+  ).onfinish = () => ripple.remove();
+}
+
+/* ==========================================
+   POWER BUTTON PRESS & BOUNCE + CLICK SOUND
+========================================== */
+
+// 버튼 클릭 효과음
+const buttonClickSound = new Audio(
+  new URL("./click.mp3", import.meta.url).href
+);
+
+buttonClickSound.preload = "auto";
+buttonClickSound.volume = 0.45; //효과음 볼륨 조절
+
+/* ==========================================
+   PAPER TEAR SOUND
+   종이 뜯기 효과음
+========================================== */
+
+const paperTearSound = new Audio(
+  new URL("./papertear.mp3", import.meta.url).href
+);
+
+paperTearSound.preload = "auto";
+paperTearSound.volume = 0.55;
+
+function playPaperTearSound() {
+  paperTearSound.pause();
+  paperTearSound.currentTime = 0;
+
+  paperTearSound.play().catch(error => {
+    console.warn("종이 뜯기 효과음 재생 실패:", error);
+  });
+}
+
+// 버튼 클릭 모션 + 효과음
+function playPowerButtonFeedback(event) {
+
+  const image = powerControl.querySelector("img");
+
+  // 버튼이 눌렸다가 원래 크기로 돌아오는 모션
+  if (image) {
+    image.animate(
+      [
+        { transform: "scale(1)", offset: 0 },
+        { transform: "scale(0.94)", offset: 0.24 },
+        { transform: "scale(1.035)", offset: 0.65 },
+        //모션 강도 조절 버튼 크기를 작았다 키울 수 있음
+        { transform: "scale(1)", offset: 1 }
+      ],
+      {
+        duration: 280,
+        easing: "ease-out"
+      }
+    );
+  }
+
+  // 클릭할 때마다 효과음 처음부터 재생
+  buttonClickSound.pause();
+  buttonClickSound.currentTime = 0;
+
+  buttonClickSound.play().catch(error => {
+    console.warn("효과음 재생 실패:", error);
+  });
+}
+
+plusButton.addEventListener("click", playPowerButtonFeedback);
+minusButton.addEventListener("click", playPowerButtonFeedback);
 /* ==========================================
    이미지 파일
 ========================================== */
@@ -1312,7 +1425,12 @@ function tearWithPower(centerPiece) {
 
   if (!centerPiece) return;
 
+  // 종이를 뜯을 때 효과음 재생
+
+  playPaperTearSound();
+
   const count =
+
     getTearCount();
 
   const centerX =
