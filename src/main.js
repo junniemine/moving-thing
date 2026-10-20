@@ -1191,24 +1191,43 @@ function resizeCanvas() {
 
   if (rect.width <= 0 || rect.height <= 0) return;
 
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(
+    window.devicePixelRatio || 1,
+    2
+  );
 
-  // 포스터 양옆에 여백 확보
-  const sideWidth = rect.width * CURTAIN_SIDE_PADDING;
+  // 포스터 좌우로 넉넉한 공간 확보
+  const sideWidth =
+    rect.width * CURTAIN_SIDE_PADDING;
 
-  const totalWidth = rect.width + sideWidth * 2;
+  const totalWidth =
+    rect.width + sideWidth * 2;
 
-  // 캔버스 확장
+  // 실제 캔버스 크기 확장
   canvas.style.width = `${totalWidth}px`;
   canvas.style.height = `${rect.height}px`;
 
-  // 원래 포스터는 중앙에 고정
+  // 원래 포스터를 캔버스 중앙에 배치
   canvas.style.left = `${-sideWidth}px`;
   canvas.style.top = "0px";
+
+  canvas.style.position = "absolute";
+  canvas.style.maxWidth = "none";
+  canvas.style.maxHeight = "none";
+
+  poster.style.overflow = "visible";
+
+  const layout =
+    poster.closest(".poster-layout");
+
+  if (layout) {
+    layout.style.overflow = "visible";
+  }
 
   canvas.width = Math.round(totalWidth * dpr);
   canvas.height = Math.round(rect.height * dpr);
 
+  // 원래 포스터 좌표계를 중앙으로 이동
   const scale = canvas.height / IMAGE_HEIGHT;
 
   ctx.setTransform(
@@ -1455,49 +1474,36 @@ function render() {
 
   if (!initialized) return;
 
+  // 확장된 캔버스 전체 지우기
+  const scale =
+    canvas.height / IMAGE_HEIGHT;
+
+  const pad =
+    (canvas.width / scale - IMAGE_WIDTH) / 2;
+
   ctx.clearRect(
+    -pad,
     0,
-    0,
-    IMAGE_WIDTH,
+    IMAGE_WIDTH + pad * 2,
     IMAGE_HEIGHT
   );
 
-  // 리버스 루프 중에는
-  // 커튼을 휘게 하지 않고 원래 종이를 표시
+  // 종이가 돌아오는 애니메이션
   if (reverseLoopPlaying) {
 
-    const scale = canvas.height / IMAGE_HEIGHT;
-
-const pad = (canvas.width / scale - IMAGE_WIDTH) / 2;
-
-// 확장된 캔버스 전체 지우기
-
-ctx.clearRect(
-
-  -pad,
-
-  0,
-
-  IMAGE_WIDTH + pad * 2,
-
-  IMAGE_HEIGHT
-
-);
-
-    drawReverseLoop(
-      performance.now()
-    );
+    drawReverseLoop(performance.now());
 
     return;
-
   }
 
   if (curtainMode) {
 
+    // 커튼 모드에서는 경계 제한 없이 그리기
     drawMovingPaper();
 
   } else {
 
+    // 평소에는 원래 포스터 표시
     ctx.drawImage(
       paperSurface,
       0,

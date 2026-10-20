@@ -156,7 +156,7 @@ body {
   aspect-ratio: 960 / 1600;
   flex-shrink: 0;
 
-  overflow: hidden;
+  overflow: visible;;
   background: #ffffff;
   touch-action: none;
 }
@@ -337,4 +337,24 @@ body {
     pointer-events: none;
   }
 
+}
+
+/* ==========================================
+   커튼이 포스터 바깥으로 나오도록 설정
+========================================== */
+
+.poster-layout {
+  overflow: visible !important;
+}
+
+#poster {
+  overflow: visible !important;
+}
+
+#paperCanvas {
+  position: absolute !important;
+  overflow: visible !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
 }
