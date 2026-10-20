@@ -204,19 +204,12 @@ function playPowerButtonFeedback(event) {
 
   }
 
-  buttonClickSound.pause();
+buttonClickSound.pause();
+buttonClickSound.currentTime = 0;
 
-  buttonClickSound.currentTime = 0;
-
-  buttonClickSound.play().catch(error => {
-
-    console.warn(
-      "효과음 재생 실패:",
-      error
-    );
-
-  });
-
+buttonClickSound.play().catch(error => {
+  console.warn("힘 버튼 효과음 재생 실패:", error);
+});
 }
 
 plusButton.addEventListener(
@@ -398,6 +391,9 @@ function getMaxUnlockedPower() {
 const STRIP_COUNT = 24;
 
 const SEGMENT_COUNT = 90;
+// 포스터 양옆으로 확장할 공간
+
+const CURTAIN_SIDE_PADDING = 1.6;
 
 const USE_GRID_FALLBACK = true;
 
@@ -1191,33 +1187,36 @@ function resizeCanvas() {
 
   if (!initialized) return;
 
-  const rect =
-    poster.getBoundingClientRect();
+  const rect = poster.getBoundingClientRect();
 
-  if (
-    rect.width <= 0 ||
-    rect.height <= 0
-  ) {
-    return;
-  }
+  if (rect.width <= 0 || rect.height <= 0) return;
 
-  const dpr = Math.min(
-    window.devicePixelRatio || 1,
-    2
-  );
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  canvas.width =
-    Math.round(rect.width * dpr);
+  // 포스터 양옆에 여백 확보
+  const sideWidth = rect.width * CURTAIN_SIDE_PADDING;
 
-  canvas.height =
-    Math.round(rect.height * dpr);
+  const totalWidth = rect.width + sideWidth * 2;
+
+  // 캔버스 확장
+  canvas.style.width = `${totalWidth}px`;
+  canvas.style.height = `${rect.height}px`;
+
+  // 원래 포스터는 중앙에 고정
+  canvas.style.left = `${-sideWidth}px`;
+  canvas.style.top = "0px";
+
+  canvas.width = Math.round(totalWidth * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+
+  const scale = canvas.height / IMAGE_HEIGHT;
 
   ctx.setTransform(
-    canvas.width / IMAGE_WIDTH,
+    scale,
     0,
     0,
-    canvas.height / IMAGE_HEIGHT,
-    0,
+    scale,
+    sideWidth * dpr,
     0
   );
 
@@ -1467,13 +1466,23 @@ function render() {
   // 커튼을 휘게 하지 않고 원래 종이를 표시
   if (reverseLoopPlaying) {
 
-    ctx.drawImage(
-      paperSurface,
-      0,
-      0,
-      IMAGE_WIDTH,
-      IMAGE_HEIGHT
-    );
+    const scale = canvas.height / IMAGE_HEIGHT;
+
+const pad = (canvas.width / scale - IMAGE_WIDTH) / 2;
+
+// 확장된 캔버스 전체 지우기
+
+ctx.clearRect(
+
+  -pad,
+
+  0,
+
+  IMAGE_WIDTH + pad * 2,
+
+  IMAGE_HEIGHT
+
+);
 
     drawReverseLoop(
       performance.now()
@@ -1722,20 +1731,18 @@ function tearWithPower(centerPiece) {
 
 function getPointerPosition(event) {
 
-  const rect =
-    canvas.getBoundingClientRect();
+  // 확장된 캔버스가 아닌 원래 포스터 기준
+  const rect = poster.getBoundingClientRect();
 
   return {
 
     x:
       (event.clientX - rect.left) /
-      rect.width *
-      IMAGE_WIDTH,
+      rect.width * IMAGE_WIDTH,
 
     y:
       (event.clientY - rect.top) /
-      rect.height *
-      IMAGE_HEIGHT
+      rect.height * IMAGE_HEIGHT
 
   };
 
@@ -1817,7 +1824,7 @@ canvas.addEventListener(
     event.preventDefault();
 
     const rect =
-      canvas.getBoundingClientRect();
+  poster.getBoundingClientRect();
 
     const dx =
       event.clientX - previousX;
