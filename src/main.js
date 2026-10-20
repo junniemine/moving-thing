@@ -1392,34 +1392,56 @@ function drawFallingPiece(piece) {
 
 function drawReverseLoop(time) {
 
-  const elapsed =
-    time - reverseLoopStart;
+  const elapsed = time - reverseLoopStart;
 
   const moveDuration =
     REVERSE_LOOP_DURATION -
     REVERSE_LOOP_STAGGER;
 
+  // 1. 기존에 종이를 뜯어서 구멍이 생긴 포스터 표시
+  ctx.drawImage(
+    paperSurface,
+    0,
+    0,
+    IMAGE_WIDTH,
+    IMAGE_HEIGHT
+  );
+
+  // 2. 뜯어낸 직사각형 조각들만 원래 자리로 복귀
   reversePieces.forEach(item => {
 
-    const localTime =
-      elapsed - item.delay;
+    const localTime = elapsed - item.delay;
 
     const t = Math.max(
       0,
-      Math.min(
-        1,
-        localTime / moveDuration
-      )
+      Math.min(1, localTime / moveDuration)
     );
 
-    if (t <= 0) return;
-
-    // 천천히 감속하며 원래 자리로 돌아옴
     const eased =
       1 - Math.pow(1 - t, 3);
 
-    const piece =
-      item.piece;
+    const piece = item.piece;
+
+    // 복원이 완료된 조각은 원래 위치에 고정
+    if (t >= 1) {
+
+      ctx.drawImage(
+        posterImage,
+        piece.x,
+        piece.y,
+        piece.width,
+        piece.height,
+        piece.x,
+        piece.y,
+        piece.width,
+        piece.height
+      );
+
+      return;
+    }
+
+    // 아직 복귀 시간이 되지 않은 조각은 대기
+    if (localTime < 0) return;
 
     const currentX =
       item.startX +
@@ -1441,22 +1463,19 @@ function drawReverseLoop(time) {
 
     ctx.rotate(rotation);
 
+    // 원래 클릭해서 뜯어냈던 부분만 잘라서 그림
     ctx.drawImage(
-
       posterImage,
 
       piece.x,
       piece.y,
-
       piece.width,
       piece.height,
 
       -piece.width / 2,
       -piece.height / 2,
-
       piece.width,
       piece.height
-
     );
 
     ctx.restore();
@@ -1464,7 +1483,6 @@ function drawReverseLoop(time) {
   });
 
 }
-
 
 /* ==========================================
    화면 그리기
@@ -2095,7 +2113,7 @@ function startReverseLoop() {
 
         startY:
           IMAGE_HEIGHT *
-          (1.15 + Math.random() * 0.35),
+          (1.05 + Math.random() * 0.18),
 
         // 회전된 상태에서 복원
         startRotation:
