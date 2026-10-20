@@ -7,6 +7,9 @@
    - PNG 힘 버튼
    - 힘에 따라 여러 칸 뜯기
    - 모든 칸을 뜯은 뒤 커튼 움직임
+   - 드래그에 따른 음악 볼륨
+   - 음악 종료 시 REVERSE LOOP
+   - 종이가 역순으로 돌아와 포스터 복원
    - 모바일 터치 지원
 ========================================== */
 
@@ -32,70 +35,102 @@ const plusButton =
 
 const minusButton =
   document.querySelector("#minusButton");
-  
+
+
 /* ==========================================
    POWER BUTTON CLICK FEEDBACK
 ========================================== */
 
 function showTouchFeedback(event) {
+
   const button = event.currentTarget;
 
   const rect = button.getBoundingClientRect();
-  const controlRect = powerControl.getBoundingClientRect();
 
-  const x = rect.left + rect.width / 2 - controlRect.left;
-  const y = rect.top + rect.height / 2 - controlRect.top;
+  const controlRect =
+    powerControl.getBoundingClientRect();
 
-  const ripple = document.createElement("span");
+  const x =
+    rect.left +
+    rect.width / 2 -
+    controlRect.left;
+
+  const y =
+    rect.top +
+    rect.height / 2 -
+    controlRect.top;
+
+  const ripple =
+    document.createElement("span");
 
   Object.assign(ripple.style, {
+
     position: "absolute",
+
     left: `${x}px`,
     top: `${y}px`,
+
     width: "18px",
     height: "18px",
+
     border: "1.5px solid white",
+
     borderRadius: "50%",
-    boxShadow: "0 0 0 1px rgba(0,0,0,0.3)",
+
+    boxShadow:
+      "0 0 0 1px rgba(0,0,0,0.3)",
+
     pointerEvents: "none",
+
     zIndex: "50"
+
   });
 
   powerControl.appendChild(ripple);
 
   ripple.animate(
+
     [
       {
-        transform: "translate(-50%, -50%) scale(0.5)",
+        transform:
+          "translate(-50%, -50%) scale(0.5)",
+
         opacity: 1
       },
+
       {
-        transform: "translate(-50%, -50%) scale(2.8)",
+        transform:
+          "translate(-50%, -50%) scale(2.8)",
+
         opacity: 0
       }
     ],
+
     {
       duration: 350,
       easing: "ease-out"
     }
+
   ).onfinish = () => ripple.remove();
+
 }
 
+
 /* ==========================================
-   POWER BUTTON PRESS & BOUNCE + CLICK SOUND
+   POWER BUTTON CLICK SOUND
 ========================================== */
 
-// 버튼 클릭 효과음
 const buttonClickSound = new Audio(
   new URL("./click.mp3", import.meta.url).href
 );
 
 buttonClickSound.preload = "auto";
-buttonClickSound.volume = 0.45; //효과음 볼륨 조절
+
+buttonClickSound.volume = 0.45;
+
 
 /* ==========================================
    PAPER TEAR SOUND
-   종이 뜯기 효과음
 ========================================== */
 
 const paperTearSound = new Audio(
@@ -103,50 +138,99 @@ const paperTearSound = new Audio(
 );
 
 paperTearSound.preload = "auto";
+
 paperTearSound.volume = 0.55;
 
+
 function playPaperTearSound() {
+
   paperTearSound.pause();
+
   paperTearSound.currentTime = 0;
 
   paperTearSound.play().catch(error => {
-    console.warn("종이 뜯기 효과음 재생 실패:", error);
+
+    console.warn(
+      "종이 뜯기 효과음 재생 실패:",
+      error
+    );
+
   });
+
 }
 
-// 버튼 클릭 모션 + 효과음
+
+/* ==========================================
+   POWER BUTTON PRESS & BOUNCE
+========================================== */
+
 function playPowerButtonFeedback(event) {
 
-  const image = powerControl.querySelector("img");
+  const image =
+    powerControl.querySelector("img");
 
-  // 버튼이 눌렸다가 원래 크기로 돌아오는 모션
   if (image) {
+
     image.animate(
+
       [
-        { transform: "scale(1)", offset: 0 },
-        { transform: "scale(0.94)", offset: 0.24 },
-        { transform: "scale(1.035)", offset: 0.65 },
-        //모션 강도 조절 버튼 크기를 작았다 키울 수 있음
-        { transform: "scale(1)", offset: 1 }
+        {
+          transform: "scale(1)",
+          offset: 0
+        },
+
+        {
+          transform: "scale(0.94)",
+          offset: 0.24
+        },
+
+        {
+          transform: "scale(1.035)",
+          offset: 0.65
+        },
+
+        {
+          transform: "scale(1)",
+          offset: 1
+        }
       ],
+
       {
         duration: 280,
         easing: "ease-out"
       }
+
     );
+
   }
 
-  // 클릭할 때마다 효과음 처음부터 재생
   buttonClickSound.pause();
+
   buttonClickSound.currentTime = 0;
 
   buttonClickSound.play().catch(error => {
-    console.warn("효과음 재생 실패:", error);
+
+    console.warn(
+      "효과음 재생 실패:",
+      error
+    );
+
   });
+
 }
 
-plusButton.addEventListener("click", playPowerButtonFeedback);
-minusButton.addEventListener("click", playPowerButtonFeedback);
+
+plusButton.addEventListener(
+  "click",
+  playPowerButtonFeedback
+);
+
+minusButton.addEventListener(
+  "click",
+  playPowerButtonFeedback
+);
+
+
 /* ==========================================
    이미지 파일
 ========================================== */
@@ -161,90 +245,98 @@ const MASK_IMAGE = new URL(
   import.meta.url
 ).href;
 
+
 /* ==========================================
    CURTAIN AUDIO SYSTEM
-
-   커튼을 잡으면 음악 시작
-   커튼을 열수록 음악이 선명해짐
-   커튼을 놓으면 무음
-   무음이어도 음악 시간은 계속 흐름
 ========================================== */
 
-// 음악 파일
 const curtainAudio = new Audio(
   new URL("./창문.mp3", import.meta.url).href
 );
 
 curtainAudio.preload = "auto";
+
 curtainAudio.loop = false;
+
 curtainAudio.volume = 0;
 
-// 음악이 시작되었는지 확인
 let audioStarted = false;
 
-// 음악 시작
+
+/* ==========================================
+   음악 시작
+========================================== */
+
 function startCurtainAudio() {
 
   if (audioStarted) return;
 
+  if (reverseLoopPlaying) return;
+
   audioStarted = true;
+
+  curtainAudio.muted = false;
 
   curtainAudio.play().catch(error => {
 
     audioStarted = false;
 
-    console.error("음악 재생 실패:", error);
+    console.error(
+      "음악 재생 실패:",
+      error
+    );
 
   });
 
 }
 
-// 커튼 움직임에 따른 음량 계산
-/* ==========================================
-   CURTAIN AUDIO SYSTEM
 
-   커튼을 많이 열수록 소리가 커짐
-   힘이 강할수록 소리도 더 커짐
-   커튼을 놓으면 무음
-   음악 시간은 계속 흐름
+/* ==========================================
+   커튼 움직임에 따른 음량 계산
 ========================================== */
 
 function updateCurtainAudio() {
 
-  if (!curtainMode || !audioStarted) return;
-
-  // 커튼을 놓으면 무음
-  if (!dragging) {
-    curtainAudio.muted = true;
-    curtainAudio.volume = 0;
+  if (
+    !curtainMode ||
+    !audioStarted ||
+    reverseLoopPlaying
+  ) {
     return;
+  }
+
+  if (!dragging) {
+
+    curtainAudio.muted = true;
+
+    curtainAudio.volume = 0;
+
+    return;
+
   }
 
   curtainAudio.muted = false;
 
-  // 힘이 강할수록 커튼이 더 크게 열림
   const pullStrength =
-    1 + (power - 1) * 0.42;
+    1 + (power - 1) * 1.1;
 
-  // 실제 커튼이 열린 정도
   const opening =
     Math.abs(dragX) * pullStrength;
 
-  // 최대 열림 기준
   const maxOpening =
     IMAGE_WIDTH * 0.45;
 
-  // 커튼이 열린 비율 (0~1)
   const openingRatio = Math.min(
     1,
-    Math.max(0, opening / maxOpening)
+    Math.max(
+      0,
+      opening / maxOpening
+    )
   );
 
-  // 힘 단계에 따른 음량 증가
   const powerBoost =
     1 + (power - 1) * 0.3;
 
-  // 최종 음량
   curtainAudio.volume = Math.min(
     1,
     openingRatio * powerBoost
@@ -258,25 +350,40 @@ function updateCurtainAudio() {
 ========================================== */
 
 const BASE_WIDTH = 960;
+
 const BASE_HEIGHT = 1600;
 
-// 3개 뜯으면 힘 버튼 등장
 const POWER_UNLOCK_COUNT = 3;
 
-// 힘 최대 단계
 const MAX_POWER = 5;
 
-// 커튼 세로줄
 const STRIP_COUNT = 24;
 
-// 세로줄 휘어짐 세분화
 const SEGMENT_COUNT = 90;
 
-// 마스크 판별이 어려울 때 사용할 좌표
 const USE_GRID_FALLBACK = true;
 
-// 마스크 자동 판별을 사용할지
 const USE_IMAGE_MASK = true;
+
+
+/* ==========================================
+   REVERSE LOOP 설정
+========================================== */
+
+// 종이가 완전히 복원되는 시간
+const REVERSE_LOOP_DURATION = 2300;
+
+// 종이 조각 사이의 복원 시간차
+const REVERSE_LOOP_STAGGER = 800;
+
+// 복원 시작 여부
+let reverseLoopPlaying = false;
+
+// 복원 시작 시간
+let reverseLoopStart = 0;
+
+// 복원되는 종이 조각
+const reversePieces = [];
 
 
 /* ==========================================
@@ -302,6 +409,7 @@ let activeColumn = 0;
 let lastTime = 0;
 
 let IMAGE_WIDTH = 0;
+
 let IMAGE_HEIGHT = 0;
 
 let initialized = false;
@@ -317,8 +425,6 @@ const fallingPieces = [];
 
 /* ==========================================
    이미지 로딩 함수
-
-   캐시된 이미지도 정상 처리
 ========================================== */
 
 function loadImage(src) {
@@ -368,17 +474,8 @@ const paperCtx =
 
 /* ==========================================
    직사각형 격자
-
-   포스터 원본 기준: 960 × 1600
-
-   가로 경계와 세로 경계를
-   개별적으로 정의
-
-   마스크 이미지와 비교하여
-   실제 뜯을 칸을 선택
 ========================================== */
 
-// 세로줄 경계
 const GRID_X = [
 
   18,
@@ -407,7 +504,7 @@ const GRID_X = [
 
 ];
 
-// 가로줄 경계
+
 const GRID_ROWS = [
 
   [28, 129],
@@ -434,10 +531,7 @@ const GRID_ROWS = [
 
 
 /* ==========================================
-   기존 좌표를 예비 데이터로 사용
-
-   마스크 이미지 분석이 실패했을 때만
-   사용됨
+   예비 좌표
 ========================================== */
 
 const FALLBACK_ROWS = [
@@ -476,7 +570,7 @@ const FALLBACK_ROWS = [
       [108,153], [153,199],
       [199,245], [245,290],
       [290,336], [336,380],
-      [380,425], [425,470],
+      [425,470],
       [580,625], [625,670],
       [670,714], [714,759],
       [759,804], [804,850]
@@ -501,7 +595,7 @@ const FALLBACK_ROWS = [
       [108,153], [153,199],
       [199,245], [245,290],
       [290,336], [336,380],
-      [380,425], [425,470],
+      [425,470],
       [490,535], [535,580],
       [580,625], [625,670],
       [670,714], [714,759],
@@ -517,7 +611,7 @@ const FALLBACK_ROWS = [
       [108,153], [153,199],
       [199,245], [245,290],
       [290,336], [336,380],
-      [380,425], [425,470],
+      [425,470],
       [490,535], [535,580],
       [580,625], [625,670],
       [670,714], [714,759],
@@ -635,12 +729,10 @@ function getPixel(data, width, x, y) {
   const i = (y * width + x) * 4;
 
   return [
-
     data[i],
     data[i + 1],
     data[i + 2],
     data[i + 3]
-
   ];
 
 }
@@ -649,13 +741,9 @@ function getPixel(data, width, x, y) {
 function luminance(color) {
 
   return (
-
     color[0] * 0.2126 +
-
     color[1] * 0.7152 +
-
     color[2] * 0.0722
-
   );
 
 }
@@ -669,15 +757,22 @@ function createGridCandidates() {
 
   const candidates = [];
 
-  const sx = IMAGE_WIDTH / BASE_WIDTH;
-  const sy = IMAGE_HEIGHT / BASE_HEIGHT;
+  const sx =
+    IMAGE_WIDTH / BASE_WIDTH;
+
+  const sy =
+    IMAGE_HEIGHT / BASE_HEIGHT;
 
   const columns = [];
 
-  // 중앙 여백을 넘는 가로 칸은 만들지 않음
-  for (let i = 0; i < GRID_X.length - 1; i++) {
+  for (
+    let i = 0;
+    i < GRID_X.length - 1;
+    i++
+  ) {
 
     const left = GRID_X[i];
+
     const right = GRID_X[i + 1];
 
     if (right - left > 55) {
@@ -700,7 +795,9 @@ function createGridCandidates() {
         width: (right - left) * sx,
         height: (bottom - top) * sy,
 
-        removed: false
+        removed: false,
+        pending: false,
+        tearOrder: undefined
 
       });
 
@@ -715,9 +812,6 @@ function createGridCandidates() {
 
 /* ==========================================
    마스크 기반 뜯기 영역 판별
-
-   연결된 영역을 탐색하지 않고
-   각 직사각형 중앙 색을 비교
 ========================================== */
 
 function detectPiecesFromMask() {
@@ -728,6 +822,7 @@ function detectPiecesFromMask() {
     document.createElement("canvas");
 
   maskCanvas.width = IMAGE_WIDTH;
+
   maskCanvas.height = IMAGE_HEIGHT;
 
   const maskCtx =
@@ -751,7 +846,8 @@ function detectPiecesFromMask() {
       IMAGE_HEIGHT
     );
 
-  const pixels = imageData.data;
+  const pixels =
+    imageData.data;
 
   const candidates =
     createGridCandidates();
@@ -760,65 +856,68 @@ function detectPiecesFromMask() {
     return false;
   }
 
-  /*
-    각 칸 안쪽 9개 위치의 색상을 조사한다.
-    점선이나 경계선의 영향을 줄이기 위해
-    칸 가장자리는 검사하지 않는다.
-  */
+  const samples =
+    candidates.map(piece => {
 
-  const samples = candidates.map(piece => {
+      let brightness = 0;
 
-    let brightness = 0;
-    let alpha = 0;
+      let alpha = 0;
 
-    let count = 0;
+      let count = 0;
 
-    for (let iy = 1; iy <= 3; iy++) {
+      for (
+        let iy = 1;
+        iy <= 3;
+        iy++
+      ) {
 
-      for (let ix = 1; ix <= 3; ix++) {
+        for (
+          let ix = 1;
+          ix <= 3;
+          ix++
+        ) {
 
-        const x =
-          piece.x +
-          piece.width * ix / 4;
+          const x =
+            piece.x +
+            piece.width * ix / 4;
 
-        const y =
-          piece.y +
-          piece.height * iy / 4;
+          const y =
+            piece.y +
+            piece.height * iy / 4;
 
-        const color = getPixel(
-          pixels,
-          IMAGE_WIDTH,
-          x,
-          y
-        );
+          const color = getPixel(
+            pixels,
+            IMAGE_WIDTH,
+            x,
+            y
+          );
 
-        brightness += luminance(color);
+          brightness +=
+            luminance(color);
 
-        alpha += color[3];
+          alpha +=
+            color[3];
 
-        count++;
+          count++;
+
+        }
 
       }
 
-    }
+      return {
 
-    return {
+        ...piece,
 
-      ...piece,
+        brightness:
+          brightness / count,
 
-      brightness: brightness / count,
+        alpha:
+          alpha / count
 
-      alpha: alpha / count
+      };
 
-    };
+    });
 
-  });
-
-
-  /*
-    밝은 직사각형과
-    어두운 배경의 색상 차이 확인
-  */
 
   const brightnessValues =
     samples.map(s => s.brightness);
@@ -838,16 +937,11 @@ function detectPiecesFromMask() {
   const maxAlpha =
     Math.max(...alphaValues);
 
-
   let selected = [];
 
-
-  /*
-    투명한 PNG 마스크라면
-    투명 영역을 뜯는 칸으로 판단
-  */
-
-  if (maxAlpha - minAlpha > 80) {
+  if (
+    maxAlpha - minAlpha > 80
+  ) {
 
     const threshold =
       (maxAlpha + minAlpha) / 2;
@@ -857,11 +951,6 @@ function detectPiecesFromMask() {
     );
 
   }
-
-  /*
-    불투명한 PNG라면
-    밝은 색상의 칸을 뜯는 영역으로 판단
-  */
 
   else if (
     maxBrightness - minBrightness > 15
@@ -876,21 +965,15 @@ function detectPiecesFromMask() {
 
   }
 
-
-  /*
-    너무 적거나 너무 많은 칸이 선택되면
-    자동 분석이 불확실한 것으로 판단
-  */
-
   if (
     selected.length < 5 ||
-    selected.length > candidates.length * 0.95
+    selected.length >
+      candidates.length * 0.95
   ) {
 
     return false;
 
   }
-
 
   pieces.length = 0;
 
@@ -904,7 +987,9 @@ function detectPiecesFromMask() {
       width: piece.width,
       height: piece.height,
 
-      removed: false
+      removed: false,
+      pending: false,
+      tearOrder: undefined
 
     });
 
@@ -923,8 +1008,11 @@ function createFallbackPieces() {
 
   pieces.length = 0;
 
-  const sx = IMAGE_WIDTH / BASE_WIDTH;
-  const sy = IMAGE_HEIGHT / BASE_HEIGHT;
+  const sx =
+    IMAGE_WIDTH / BASE_WIDTH;
+
+  const sy =
+    IMAGE_HEIGHT / BASE_HEIGHT;
 
   FALLBACK_ROWS.forEach(
     ([top, bottom, columns]) => {
@@ -939,7 +1027,9 @@ function createFallbackPieces() {
           width: (right - left) * sx,
           height: (bottom - top) * sy,
 
-          removed: false
+          removed: false,
+          pending: false,
+          tearOrder: undefined
 
         });
 
@@ -968,7 +1058,8 @@ function createPieces() {
 
     try {
 
-      detected = detectPiecesFromMask();
+      detected =
+        detectPiecesFromMask();
 
     } catch (error) {
 
@@ -1010,8 +1101,11 @@ function updatePaperSurface() {
 
   if (!posterImage) return;
 
-  paperSurface.width = IMAGE_WIDTH;
-  paperSurface.height = IMAGE_HEIGHT;
+  paperSurface.width =
+    IMAGE_WIDTH;
+
+  paperSurface.height =
+    IMAGE_HEIGHT;
 
   paperCtx.clearRect(
     0,
@@ -1096,10 +1190,6 @@ function resizeCanvas() {
 
 /* ==========================================
    커튼 휘어짐 계산
-
-   힘이 높을수록
-   - 더 많은 커튼 줄이 함께 움직임
-   - 더 멀리 젖혀짐
 ========================================== */
 
 function getBendOffset(x, y) {
@@ -1110,31 +1200,28 @@ function getBendOffset(x, y) {
   const distance =
     Math.abs(column - activeColumn);
 
-  // 힘이 강할수록 움직이는 범위 확대
   const spread =
-    10 + (power - 1) * 13;
+    10 + (power - 1) * 70;
 
   const influence =
     Math.exp(
       -(distance * distance) / spread
     );
 
-  // 위쪽은 고정하고 아래쪽으로 갈수록 휘어짐
   const normalizedY =
     Math.max(
       0,
       (y / IMAGE_HEIGHT - 0.05) / 0.95
     );
 
-  // 힘이 강할수록 당겨지는 거리 증가
   const pullStrength =
-    1 + (power - 1) * 0.42;
+    1 + (power - 1) * 1.1;
 
   return (
     dragX *
     pullStrength *
     influence *
-    Math.pow(normalizedY, 1.5)
+    Math.pow(normalizedY, 1.15)
   );
 
 }
@@ -1213,11 +1300,8 @@ function drawFallingPiece(piece) {
     Math.max(0, piece.opacity);
 
   ctx.translate(
-
     piece.currentX + piece.width / 2,
-
     piece.currentY + piece.height / 2
-
   );
 
   ctx.rotate(piece.rotation);
@@ -1246,6 +1330,87 @@ function drawFallingPiece(piece) {
 
 
 /* ==========================================
+   REVERSE LOOP
+   되돌아오는 종이 그리기
+========================================== */
+
+function drawReverseLoop(time) {
+
+  const elapsed =
+    time - reverseLoopStart;
+
+  const moveDuration =
+    REVERSE_LOOP_DURATION -
+    REVERSE_LOOP_STAGGER;
+
+  reversePieces.forEach(item => {
+
+    const localTime =
+      elapsed - item.delay;
+
+    const t = Math.max(
+      0,
+      Math.min(
+        1,
+        localTime / moveDuration
+      )
+    );
+
+    if (t <= 0) return;
+
+    // 천천히 감속하며 원래 자리로 돌아옴
+    const eased =
+      1 - Math.pow(1 - t, 3);
+
+    const piece =
+      item.piece;
+
+    const currentX =
+      item.startX +
+      (piece.x - item.startX) * eased;
+
+    const currentY =
+      item.startY +
+      (piece.y - item.startY) * eased;
+
+    const rotation =
+      item.startRotation * (1 - eased);
+
+    ctx.save();
+
+    ctx.translate(
+      currentX + piece.width / 2,
+      currentY + piece.height / 2
+    );
+
+    ctx.rotate(rotation);
+
+    ctx.drawImage(
+
+      posterImage,
+
+      piece.x,
+      piece.y,
+
+      piece.width,
+      piece.height,
+
+      -piece.width / 2,
+      -piece.height / 2,
+
+      piece.width,
+      piece.height
+
+    );
+
+    ctx.restore();
+
+  });
+
+}
+
+
+/* ==========================================
    화면 그리기
 ========================================== */
 
@@ -1259,6 +1424,26 @@ function render() {
     IMAGE_WIDTH,
     IMAGE_HEIGHT
   );
+
+  // 리버스 루프 중에는
+  // 커튼을 휘게 하지 않고 원래 종이를 표시
+  if (reverseLoopPlaying) {
+
+    ctx.drawImage(
+      paperSurface,
+      0,
+      0,
+      IMAGE_WIDTH,
+      IMAGE_HEIGHT
+    );
+
+    drawReverseLoop(
+      performance.now()
+    );
+
+    return;
+
+  }
 
   if (curtainMode) {
 
@@ -1298,6 +1483,11 @@ function tearPiece(piece) {
 
   piece.removed = true;
 
+  piece.pending = false;
+
+  // 뜯은 순서 저장
+  piece.tearOrder = removedCount;
+
   removedCount++;
 
   fallingPieces.push({
@@ -1325,11 +1515,6 @@ function tearPiece(piece) {
 
   updatePaperSurface();
 
-  /*
-    3칸 뜯으면
-    PNG 힘 버튼 등장
-  */
-
   if (
     removedCount >= POWER_UNLOCK_COUNT
   ) {
@@ -1340,37 +1525,29 @@ function tearPiece(piece) {
 
   }
 
-  /*
-    모든 칸을 뜯으면
-    커튼 모드
-  */
+// 모든 종이를 뜯으면 커튼 모드
+if (
+  removedCount === pieces.length
+) {
 
-  if (
-    removedCount === pieces.length
-  ) {
+  setTimeout(() => {
 
-    setTimeout(() => {
+    curtainMode = true;
 
-      curtainMode = true;
+    // 커튼 단계 진입 시 힘 초기화
+    power = 1;
 
-       power = 1;
+    canvas.style.cursor = "grab";
 
-      canvas.style.cursor = "grab";
+    startFinalShake();
 
-      startFinalShake();
-
-    }, 500);
-
-  }
-
-  return true;
-
-  
+  }, 500);
 
 }
 
+  return true;
 
-
+}
 
 
 /* ==========================================
@@ -1400,7 +1577,12 @@ function findPiece(x, y) {
 
   return pieces.find(piece => {
 
-    if (piece.removed) return false;
+    if (
+      piece.removed ||
+      piece.pending
+    ) {
+      return false;
+    }
 
     return (
 
@@ -1425,23 +1607,26 @@ function tearWithPower(centerPiece) {
 
   if (!centerPiece) return;
 
-  // 종이를 뜯을 때 효과음 재생
-
   playPaperTearSound();
 
   const count =
-
     getTearCount();
 
   const centerX =
-    centerPiece.x + centerPiece.width / 2;
+    centerPiece.x +
+    centerPiece.width / 2;
 
   const centerY =
-    centerPiece.y + centerPiece.height / 2;
+    centerPiece.y +
+    centerPiece.height / 2;
 
   const candidates = pieces
 
-    .filter(piece => !piece.removed)
+    .filter(
+      piece =>
+        !piece.removed &&
+        !piece.pending
+    )
 
     .sort((a, b) => {
 
@@ -1471,9 +1656,6 @@ function tearWithPower(centerPiece) {
 
   const selected =
     candidates.slice(0, count);
-
-  // 여러 번 빠르게 눌렀을 때
-  // 같은 종이가 중복 예약되지 않도록 처리
 
   selected.forEach(piece => {
 
@@ -1534,43 +1716,38 @@ canvas.addEventListener(
 
     if (!initialized) return;
 
+    // 종이 복원 중에는 조작 불가능
+    if (reverseLoopPlaying) return;
+
     const position =
       getPointerPosition(event);
 
-    /*
-      커튼 모드
-    */
-
     if (curtainMode) {
 
-  dragging = true;
-  curtainAudio.muted = false;
+      dragging = true;
 
-  // 커튼을 처음 잡으면 음악 시작
-  startCurtainAudio();
+      curtainAudio.muted = false;
 
-  previousX =
-    event.clientX;
+      startCurtainAudio();
 
-  activeColumn =
-    position.x /
-    IMAGE_WIDTH *
-    STRIP_COUNT;
+      previousX =
+        event.clientX;
 
-  canvas.setPointerCapture(
-    event.pointerId
-  );
+      activeColumn =
+        position.x /
+        IMAGE_WIDTH *
+        STRIP_COUNT;
 
-  canvas.style.cursor =
-    "grabbing";
+      canvas.setPointerCapture(
+        event.pointerId
+      );
 
-  return;
+      canvas.style.cursor =
+        "grabbing";
 
-}
+      return;
 
-    /*
-      종이 뜯기
-    */
+    }
 
     const piece = findPiece(
       position.x,
@@ -1589,9 +1766,6 @@ canvas.addEventListener(
 
 /* ==========================================
    커튼 드래그
-
-   힘이 강할수록
-   더 멀리 잡아당길 수 있음
 ========================================== */
 
 canvas.addEventListener(
@@ -1599,6 +1773,8 @@ canvas.addEventListener(
   event => {
 
     if (!dragging) return;
+
+    if (reverseLoopPlaying) return;
 
     event.preventDefault();
 
@@ -1614,16 +1790,15 @@ canvas.addEventListener(
     const scaledDX =
       dx * IMAGE_WIDTH / rect.width;
 
-    // 힘이 높을수록 최대 당김 거리 증가
     const maxPull =
       IMAGE_WIDTH *
-      (0.24 + (power - 1) * 0.09);
+      (0.24 + (power - 1) * 0.2);
 
     dragX = Math.max(
       -maxPull,
       Math.min(
         maxPull,
-        dragX + scaledDX * 0.55
+        dragX + scaledDX * 0.85
       )
     );
 
@@ -1658,32 +1833,46 @@ function endDrag(event) {
 
   }
 
+  curtainAudio.muted = true;
+
+  curtainAudio.volume = 0;
+
 }
+
 
 canvas.addEventListener(
   "pointerup",
   endDrag
 );
 
-// 모바일에서 터치 연결이 끊어졌을 때
-canvas.addEventListener("lostpointercapture", () => {
 
-  dragging = false;
+canvas.addEventListener(
+  "lostpointercapture",
+  () => {
 
-  curtainAudio.muted = true;
-  curtainAudio.volume = 0;
+    dragging = false;
 
-});
+    curtainAudio.muted = true;
 
-// 다른 앱으로 전환했을 때
-window.addEventListener("blur", () => {
+    curtainAudio.volume = 0;
 
-  dragging = false;
+  }
+);
 
-  curtainAudio.muted = true;
-  curtainAudio.volume = 0;
 
-});
+window.addEventListener(
+  "blur",
+  () => {
+
+    dragging = false;
+
+    curtainAudio.muted = true;
+
+    curtainAudio.volume = 0;
+
+  }
+);
+
 
 canvas.addEventListener(
   "pointercancel",
@@ -1693,9 +1882,6 @@ canvas.addEventListener(
 
 /* ==========================================
    힘 버튼
-
-   별도의 숫자나 텍스트를
-   화면에 표시하지 않음
 ========================================== */
 
 plusButton.addEventListener(
@@ -1703,6 +1889,7 @@ plusButton.addEventListener(
   event => {
 
     event.preventDefault();
+
     event.stopPropagation();
 
     power = Math.min(
@@ -1710,16 +1897,21 @@ plusButton.addEventListener(
       power + 1
     );
 
-    console.log("현재 힘:", power);
+    console.log(
+      "현재 힘:",
+      power
+    );
 
   }
 );
+
 
 minusButton.addEventListener(
   "click",
   event => {
 
     event.preventDefault();
+
     event.stopPropagation();
 
     power = Math.max(
@@ -1727,7 +1919,10 @@ minusButton.addEventListener(
       power - 1
     );
 
-    console.log("현재 힘:", power);
+    console.log(
+      "현재 힘:",
+      power
+    );
 
   }
 );
@@ -1741,6 +1936,7 @@ let shakeStart = 0;
 
 let shakeDuration = 0;
 
+
 function startFinalShake() {
 
   shakeStart =
@@ -1750,6 +1946,194 @@ function startFinalShake() {
 
   activeColumn =
     STRIP_COUNT / 2;
+
+}
+
+
+/* ==========================================
+   REVERSE LOOP START
+========================================== */
+
+function startReverseLoop() {
+
+  if (!curtainMode) return;
+
+  if (reverseLoopPlaying) return;
+
+  reverseLoopPlaying = true;
+
+  reverseLoopStart =
+    performance.now();
+
+  dragging = false;
+
+  dragX = 0;
+
+  dragVelocity = 0;
+
+  shakeDuration = 0;
+
+  curtainAudio.pause();
+
+  curtainAudio.muted = true;
+
+  curtainAudio.volume = 0;
+
+  canvas.style.cursor =
+    "default";
+
+  // 힘 버튼 숨김
+  powerControl.classList.remove(
+    "visible"
+  );
+
+  // 볼륨 안내 이미지 숨김
+  document
+    .getElementById("curtainHint")
+    ?.remove();
+
+  curtainHintShown = false;
+
+  // 기존에 떨어지던 종이 제거
+  fallingPieces.length = 0;
+
+  // 마지막에 뜯은 종이부터 복원
+  const tornPieces = pieces
+
+    .filter(
+      piece => piece.removed
+    )
+
+    .sort((a, b) => {
+
+      return (
+        (b.tearOrder ?? 0) -
+        (a.tearOrder ?? 0)
+      );
+
+    });
+
+  reversePieces.length = 0;
+
+  const count = Math.max(
+    1,
+    tornPieces.length - 1
+  );
+
+  tornPieces.forEach(
+    (piece, index) => {
+
+      const delay =
+        (index / count) *
+        REVERSE_LOOP_STAGGER;
+
+      reversePieces.push({
+
+        piece,
+
+        delay,
+
+        // 화면 아래에서 올라옴
+        startX:
+          piece.x +
+          (Math.random() - 0.5) *
+          IMAGE_WIDTH * 0.5,
+
+        startY:
+          IMAGE_HEIGHT *
+          (1.15 + Math.random() * 0.35),
+
+        // 회전된 상태에서 복원
+        startRotation:
+          (Math.random() - 0.5) *
+          Math.PI * 1.5
+
+      });
+
+    }
+  );
+
+}
+
+
+/* ==========================================
+   REVERSE LOOP COMPLETE
+========================================== */
+
+function finishReverseLoop() {
+
+  if (!reverseLoopPlaying) return;
+
+  reverseLoopPlaying = false;
+
+  reversePieces.length = 0;
+
+  // 모든 종이 복원
+  pieces.forEach(piece => {
+
+    piece.removed = false;
+
+    piece.pending = false;
+
+    piece.tearOrder = undefined;
+
+  });
+
+  fallingPieces.length = 0;
+
+  removedCount = 0;
+
+  pendingTears = 0;
+
+  // 힘 초기화
+  power = 1;
+
+  // 커튼 모드 종료
+  curtainMode = false;
+
+  dragging = false;
+
+  dragX = 0;
+
+  dragVelocity = 0;
+
+  shakeDuration = 0;
+
+  // 음악 초기화
+  audioStarted = false;
+
+  curtainAudio.pause();
+
+  curtainAudio.currentTime = 0;
+
+  curtainAudio.volume = 0;
+
+  curtainAudio.muted = true;
+
+  // 버튼 숨기기
+  powerControl.classList.remove(
+    "visible"
+  );
+
+  // 안내 이미지 제거
+  document
+    .getElementById("curtainHint")
+    ?.remove();
+
+  curtainHintShown = false;
+
+  canvas.style.cursor =
+    "pointer";
+
+  // 흰색 포스터 복원
+  updatePaperSurface();
+
+  render();
+
+  // 다음 반복을 위한 감지
+  requestAnimationFrame(
+    watchCurtainHint
+  );
 
 }
 
@@ -1770,9 +2154,10 @@ function animate(time) {
 
   lastTime = time;
 
-  /*
-    종이 낙하
-  */
+
+  /* ========================================
+     종이 낙하
+  ======================================== */
 
   fallingPieces.forEach(piece => {
 
@@ -1801,9 +2186,9 @@ function animate(time) {
   });
 
 
-  /*
-    화면 밖으로 떨어진 종이 제거
-  */
+  /* ========================================
+     화면 밖으로 떨어진 종이 제거
+  ======================================== */
 
   for (
     let i = fallingPieces.length - 1;
@@ -1815,12 +2200,9 @@ function animate(time) {
       fallingPieces[i];
 
     if (
-
       piece.opacity <= 0 ||
-
       piece.currentY >
       IMAGE_HEIGHT * 1.5
-
     ) {
 
       fallingPieces.splice(i, 1);
@@ -1830,12 +2212,13 @@ function animate(time) {
   }
 
 
-  /*
-    마지막 자동 흔들림
-  */
+  /* ========================================
+     마지막 자동 흔들림
+  ======================================== */
 
   if (
     curtainMode &&
+    !reverseLoopPlaying &&
     shakeDuration > 0 &&
     !dragging
   ) {
@@ -1874,12 +2257,13 @@ function animate(time) {
   }
 
 
-  /*
-    손을 놓으면 원래 위치로 복귀
-  */
+  /* ========================================
+     손을 놓으면 커튼 복귀
+  ======================================== */
 
   if (
     curtainMode &&
+    !reverseLoopPlaying &&
     !dragging &&
     shakeDuration === 0
   ) {
@@ -1892,11 +2276,8 @@ function animate(time) {
     dragX += dragVelocity;
 
     if (
-
       Math.abs(dragX) < 0.05 &&
-
       Math.abs(dragVelocity) < 0.05
-
     ) {
 
       dragX = 0;
@@ -1907,12 +2288,32 @@ function animate(time) {
 
   }
 
-  // 커튼 움직임에 맞춰 음악 음량 변경
-updateCurtainAudio();
 
-render();
+  /* ========================================
+     음악 볼륨
+  ======================================== */
 
-requestAnimationFrame(animate);
+  updateCurtainAudio();
+
+
+  /* ========================================
+     리버스 루프 완료 확인
+  ======================================== */
+
+  if (
+    reverseLoopPlaying &&
+    time - reverseLoopStart >=
+      REVERSE_LOOP_DURATION
+  ) {
+
+    finishReverseLoop();
+
+  }
+
+
+  render();
+
+  requestAnimationFrame(animate);
 
 }
 
@@ -1922,6 +2323,7 @@ requestAnimationFrame(animate);
 ========================================== */
 
 let lastTouchEnd = 0;
+
 
 document.addEventListener(
   "touchend",
@@ -1985,10 +2387,6 @@ async function initialize() {
 
   try {
 
-    /*
-      처음 화면 이미지 로드
-    */
-
     posterImage =
       await loadImage(POSTER_IMAGE);
 
@@ -1997,14 +2395,6 @@ async function initialize() {
 
     IMAGE_HEIGHT =
       posterImage.naturalHeight;
-
-
-    /*
-      마스크 이미지 로드
-
-      마스크를 찾지 못해도
-      화면 자체가 멈추지 않도록 처리
-    */
 
     try {
 
@@ -2022,41 +2412,19 @@ async function initialize() {
 
     }
 
-
-    /*
-      종이 조각 생성
-    */
-
+    // 종이 조각 생성
     createPieces();
 
-
-    /*
-      초기 포스터 생성
-    */
-
+    // 초기 포스터 생성
     updatePaperSurface();
-
-
-    /*
-      초기화 완료
-    */
 
     initialized = true;
 
-
-    /*
-      캔버스 크기
-    */
-
+    // 캔버스 크기
     resizeCanvas();
 
-
-    /*
-      애니메이션 시작
-    */
-
+    // 애니메이션 시작
     requestAnimationFrame(animate);
-
 
     console.log(
       "포스터 초기화 완료"
@@ -2090,16 +2458,13 @@ window.addEventListener(
 
 initialize();
 
+
 /* ==========================================
    CURTAIN IMAGE HINT
-
-   커튼으로 전환되면
-   볼륨(1).png 이미지 표시
-
-   글자 애니메이션 없음
 ========================================== */
 
 let curtainHintShown = false;
+
 
 function showCurtainHint() {
 
@@ -2112,7 +2477,6 @@ function showCurtainHint() {
 
   curtainHintShown = true;
 
-  // 이전 안내 문구 제거
   const oldHint =
     document.getElementById("curtainHint");
 
@@ -2120,33 +2484,44 @@ function showCurtainHint() {
     oldHint.remove();
   }
 
-  // PNG 이미지 생성
   const hintImage =
     document.createElement("img");
 
-  hintImage.id = "curtainHint";
-  hintImage.className = "curtain-hint";
+  hintImage.id =
+    "curtainHint";
 
-hintImage.src = new URL(
-  "./volume.png",
-  import.meta.url
-).href;
+  hintImage.className =
+    "curtain-hint";
 
-  hintImage.alt = "볼륨 안내";
+  hintImage.src = new URL(
+    "./volume.png",
+    import.meta.url
+  ).href;
+
+  hintImage.alt =
+    "볼륨 안내";
+
   hintImage.draggable = false;
 
-  // 이미지 로딩 오류 확인
-  hintImage.addEventListener("error", () => {
-    console.error(
-      "볼륨 이미지를 불러오지 못했습니다:",
-      hintImage.src
-    );
-  });
+  hintImage.addEventListener(
+    "error",
+    () => {
 
-  layout.appendChild(hintImage);
+      console.error(
+        "볼륨 이미지를 불러오지 못했습니다:",
+        hintImage.src
+      );
 
-  // 이미지 표시
-  hintImage.classList.add("visible");
+    }
+  );
+
+  layout.appendChild(
+    hintImage
+  );
+
+  hintImage.classList.add(
+    "visible"
+  );
 
 }
 
@@ -2165,161 +2540,23 @@ function watchCurtainHint() {
 
   }
 
-  requestAnimationFrame(watchCurtainHint);
-
-}
-
-requestAnimationFrame(watchCurtainHint);
-
-/* ==========================================
-   음악 종료 후 커튼 전환
-========================================== */
-
-let curtainEndingPlaying = false;
-
-function resetPosterAfterMusic() {
-
-  // 종이 조각 초기화
-  pieces.forEach(piece => {
-    piece.removed = false;
-    piece.pending = false;
-  });
-
-  fallingPieces.length = 0;
-
-  removedCount = 0;
-  pendingTears = 0;
-  power = 1;
-
-  // 커튼 초기화
-  curtainMode = false;
-  dragging = false;
-  dragX = 0;
-  dragVelocity = 0;
-  shakeDuration = 0;
-
-  // 음악 초기화
-  audioStarted = false;
-
-  curtainAudio.pause();
-  curtainAudio.currentTime = 0;
-  curtainAudio.volume = 0;
-  curtainAudio.muted = true;
-
-  // 안내 이미지 제거
-  curtainHintShown = false;
-
-  document
-    .getElementById("curtainHint")
-    ?.remove();
-
-  // 힘 버튼 숨기기
-  powerControl.classList.remove("visible");
-
-  canvas.style.cursor = "pointer";
-
-  updatePaperSurface();
-  render();
-
-  requestAnimationFrame(watchCurtainHint);
+  requestAnimationFrame(
+    watchCurtainHint
+  );
 
 }
 
 
-/* ==========================================
-   커튼이 열리는 화면 전환
-========================================== */
-
-function playCurtainEnding() {
-
-  if (curtainEndingPlaying || !curtainMode) return;
-
-  curtainEndingPlaying = true;
-
-  dragging = false;
-
-  curtainAudio.muted = true;
-  curtainAudio.volume = 0;
-
-  // 전환 화면 생성
-  const overlay = document.createElement("div");
-
-  Object.assign(overlay.style, {
-    position: "absolute",
-    inset: "0",
-    overflow: "hidden",
-    zIndex: "40",
-    pointerEvents: "auto",
-
-    background:
-      `white url("${POSTER_IMAGE}") center / 100% 100% no-repeat`
-  });
-
-  // 왼쪽과 오른쪽 커튼
-  const left = document.createElement("div");
-  const right = document.createElement("div");
-
-  for (const [panel, side] of [
-    [left, "left"],
-    [right, "right"]
-  ]) {
-
-    Object.assign(panel.style, {
-      position: "absolute",
-      top: "0",
-      bottom: "0",
-      width: "50%",
-      [side]: "0",
-
-      backgroundImage: `url("${POSTER_IMAGE}")`,
-      backgroundRepeat: "no-repeat",
-      backgroundSize: "200% 100%",
-
-      backgroundPosition:
-        side === "left"
-          ? "left center"
-          : "right center",
-
-      transition:
-        "transform 1.5s cubic-bezier(.65,0,.25,1)",
-
-      willChange: "transform"
-    });
-
-    overlay.appendChild(panel);
-  }
-
-  poster.appendChild(overlay);
-
-  // 커튼을 양옆으로 열기
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-
-      left.style.transform = "translateX(-102%)";
-      right.style.transform = "translateX(102%)";
-
-    });
-  });
-
-  // 전환 완료 후 처음 상태로 복귀
-  window.setTimeout(() => {
-
-    resetPosterAfterMusic();
-
-    overlay.remove();
-
-    curtainEndingPlaying = false;
-
-  }, 1650);
-
-}
+requestAnimationFrame(
+  watchCurtainHint
+);
 
 
 /* ==========================================
-   음악 종료 감지
+   음악 종료 → REVERSE LOOP
 ========================================== */
 
 curtainAudio.addEventListener(
   "ended",
-  playCurtainEnding
+  startReverseLoop
 );
