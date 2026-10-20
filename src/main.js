@@ -1253,7 +1253,7 @@ function getBendOffset(x, y) {
     );
 
   const pullStrength =
-    1 + (power - 1) * 1.1;
+    1 + (power - 1) * 0.5;
 
   return (
     dragX *
