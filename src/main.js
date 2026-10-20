@@ -2540,7 +2540,10 @@ let curtainHintShown = false;
 
 function showCurtainHint() {
 
-  if (curtainHintShown) return;
+  if (
+  curtainHintShown &&
+  document.getElementById("curtainHint")
+) return;
 
   const layout =
     document.querySelector(".poster-layout");
@@ -2604,17 +2607,15 @@ function showCurtainHint() {
 
 function watchCurtainHint() {
 
-  if (curtainMode) {
+  // 커튼 모드가 시작되면 볼륨 안내 이미지 표시
+
+  if (curtainMode && !reverseLoopPlaying) {
 
     showCurtainHint();
 
-    return;
-
   }
 
-  requestAnimationFrame(
-    watchCurtainHint
-  );
+  requestAnimationFrame(watchCurtainHint);
 
 }
 
