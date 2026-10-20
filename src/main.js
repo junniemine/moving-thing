@@ -219,10 +219,25 @@ function playPowerButtonFeedback(event) {
 
 }
 
-
 plusButton.addEventListener(
   "click",
-  playPowerButtonFeedback
+  event => {
+
+    // 현재 사용할 수 있는 최대 힘 단계
+    const maxAllowedPower = curtainMode
+      ? MAX_POWER
+      : getMaxUnlockedPower();
+
+    // 다음 단계가 해금되지 않았으면
+    // 클릭 모션과 효과음을 실행하지 않음
+    if (power >= maxAllowedPower) {
+      return;
+    }
+
+    // 힘을 올릴 수 있을 때만 클릭 모션 실행
+    playPowerButtonFeedback(event);
+
+  }
 );
 
 minusButton.addEventListener(
@@ -353,9 +368,32 @@ const BASE_WIDTH = 960;
 
 const BASE_HEIGHT = 1600;
 
-const POWER_UNLOCK_COUNT = 3;
+const POWER_UNLOCK_COUNT = 5;
 
 const MAX_POWER = 5;
+// 힘 단계별 해금 기준
+
+const POWER_UNLOCK_THRESHOLDS = [5, 15, 26, 45];
+
+// 현재 해금된 최대 힘 단계 계산
+
+function getMaxUnlockedPower() {
+
+  let unlocked = 1;
+
+  for (const threshold of POWER_UNLOCK_THRESHOLDS) {
+
+    if (removedCount >= threshold) {
+
+      unlocked++;
+
+    }
+
+  }
+
+  return Math.min(unlocked, MAX_POWER);
+
+}
 
 const STRIP_COUNT = 24;
 
@@ -1893,9 +1931,12 @@ plusButton.addEventListener(
     event.stopPropagation();
 
     power = Math.min(
-      MAX_POWER,
-      power + 1
-    );
+
+  curtainMode ? MAX_POWER : getMaxUnlockedPower(),
+
+  power + 1
+
+);
 
     console.log(
       "현재 힘:",
