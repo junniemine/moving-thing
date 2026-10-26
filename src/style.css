@@ -442,3 +442,12 @@ body {
 
   transform: none !important;
 }
+@media (max-width: 700px) {
+
+  .poster-layout {
+
+    transform: translateY(65px);
+
+  }
+
+}
