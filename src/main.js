@@ -1,15 +1,13 @@
 /* ==========================================
    INTERACTIVE PAPER POSTER
 
-   - 첫 화면 이미지
-   - 직사각형 한 칸씩 뜯기
-   - 종이 낙하 애니메이션
-   - PNG 힘 버튼
-   - 힘에 따라 여러 칸 뜯기
-   - 모든 칸을 뜯은 뒤 커튼 움직임
+   - 직사각형 종이 뜯기
+   - 종이 낙하
+   - 힘 버튼 및 숫자 PNG
+   - 힘 단계별 여러 칸 뜯기
+   - 커튼 인터랙션
    - 드래그에 따른 음악 볼륨
-   - 음악 종료 시 REVERSE LOOP
-   - 종이가 역순으로 돌아와 포스터 복원
+   - 음악 종료 후 구멍 복원
    - 모바일 터치 지원
 ========================================== */
 
@@ -18,229 +16,19 @@
    HTML 요소
 ========================================== */
 
-const poster =
-  document.querySelector("#poster");
+const poster = document.querySelector("#poster");
+const canvas = document.querySelector("#paperCanvas");
+const ctx = canvas.getContext("2d");
 
-const canvas =
-  document.querySelector("#paperCanvas");
+const powerControl = document.querySelector("#powerControl");
+const plusButton = document.querySelector("#plusButton");
+const minusButton = document.querySelector("#minusButton");
 
-const ctx =
-  canvas.getContext("2d");
-
-const powerControl =
-  document.querySelector("#powerControl");
-
-const plusButton =
-  document.querySelector("#plusButton");
-
-const minusButton =
-  document.querySelector("#minusButton");
+const layout = poster.closest(".poster-layout");
 
 
 /* ==========================================
-   POWER BUTTON CLICK FEEDBACK
-========================================== */
-
-function showTouchFeedback(event) {
-
-  const button = event.currentTarget;
-
-  const rect = button.getBoundingClientRect();
-
-  const controlRect =
-    powerControl.getBoundingClientRect();
-
-  const x =
-    rect.left +
-    rect.width / 2 -
-    controlRect.left;
-
-  const y =
-    rect.top +
-    rect.height / 2 -
-    controlRect.top;
-
-  const ripple =
-    document.createElement("span");
-
-  Object.assign(ripple.style, {
-
-    position: "absolute",
-
-    left: `${x}px`,
-    top: `${y}px`,
-
-    width: "18px",
-    height: "18px",
-
-    border: "1.5px solid white",
-
-    borderRadius: "50%",
-
-    boxShadow:
-      "0 0 0 1px rgba(0,0,0,0.3)",
-
-    pointerEvents: "none",
-
-    zIndex: "50"
-
-  });
-
-  powerControl.appendChild(ripple);
-
-  ripple.animate(
-
-    [
-      {
-        transform:
-          "translate(-50%, -50%) scale(0.5)",
-
-        opacity: 1
-      },
-
-      {
-        transform:
-          "translate(-50%, -50%) scale(2.8)",
-
-        opacity: 0
-      }
-    ],
-
-    {
-      duration: 350,
-      easing: "ease-out"
-    }
-
-  ).onfinish = () => ripple.remove();
-
-}
-
-
-/* ==========================================
-   POWER BUTTON CLICK SOUND
-========================================== */
-
-const buttonClickSound = new Audio(
-  new URL("./click.mp3", import.meta.url).href
-);
-
-buttonClickSound.preload = "auto";
-
-buttonClickSound.volume = 0.45;
-
-
-/* ==========================================
-   PAPER TEAR SOUND
-========================================== */
-
-const paperTearSound = new Audio(
-  new URL("./papertear.mp3", import.meta.url).href
-);
-
-paperTearSound.preload = "auto";
-
-paperTearSound.volume = 0.55;
-
-
-function playPaperTearSound() {
-
-  paperTearSound.pause();
-
-  paperTearSound.currentTime = 0;
-
-  paperTearSound.play().catch(error => {
-
-    console.warn(
-      "종이 뜯기 효과음 재생 실패:",
-      error
-    );
-
-  });
-
-}
-
-
-/* ==========================================
-   POWER BUTTON PRESS & BOUNCE
-========================================== */
-
-function playPowerButtonFeedback(event) {
-
-  const image =
-    powerControl.querySelector("img");
-
-  if (image) {
-
-    image.animate(
-
-      [
-        {
-          transform: "scale(1)",
-          offset: 0
-        },
-
-        {
-          transform: "scale(0.94)",
-          offset: 0.24
-        },
-
-        {
-          transform: "scale(1.035)",
-          offset: 0.65
-        },
-
-        {
-          transform: "scale(1)",
-          offset: 1
-        }
-      ],
-
-      {
-        duration: 280,
-        easing: "ease-out"
-      }
-
-    );
-
-  }
-
-buttonClickSound.pause();
-buttonClickSound.currentTime = 0;
-
-buttonClickSound.play().catch(error => {
-  console.warn("힘 버튼 효과음 재생 실패:", error);
-});
-}
-
-plusButton.addEventListener(
-  "click",
-  event => {
-
-    // 현재 사용할 수 있는 최대 힘 단계
-    const maxAllowedPower = curtainMode
-      ? MAX_POWER
-      : getMaxUnlockedPower();
-
-    // 다음 단계가 해금되지 않았으면
-    // 클릭 모션과 효과음을 실행하지 않음
-    if (power >= maxAllowedPower) {
-      return;
-    }
-
-    // 힘을 올릴 수 있을 때만 클릭 모션 실행
-    playPowerButtonFeedback(event);
-
-  }
-);
-
-minusButton.addEventListener(
-  "click",
-  playPowerButtonFeedback
-);
-
-
-/* ==========================================
-   이미지 파일
+   이미지 경로
 ========================================== */
 
 const POSTER_IMAGE = new URL(
@@ -253,9 +41,282 @@ const MASK_IMAGE = new URL(
   import.meta.url
 ).href;
 
+const POWER_IMAGES = [
+  new URL("./숫자-22.png", import.meta.url).href,
+  new URL("./숫자-23.png", import.meta.url).href,
+  new URL("./숫자-24.png", import.meta.url).href,
+  new URL("./숫자-25.png", import.meta.url).href,
+  new URL("./숫자-26.png", import.meta.url).href
+];
+
 
 /* ==========================================
-   CURTAIN AUDIO SYSTEM
+   기본 설정
+========================================== */
+
+const BASE_WIDTH = 960;
+const BASE_HEIGHT = 1600;
+
+const POWER_UNLOCK_COUNT = 5;
+const MAX_POWER = 5;
+
+const POWER_UNLOCK_THRESHOLDS = [
+  5, 15, 26, 45
+];
+
+const STRIP_COUNT = 24;
+const SEGMENT_COUNT = 90;
+
+const CURTAIN_SIDE_PADDING = 1.6;
+
+const REVERSE_LOOP_DURATION = 2300;
+const REVERSE_LOOP_STAGGER = 800;
+
+
+/* ==========================================
+   상태
+========================================== */
+
+let power = 1;
+let removedCount = 0;
+
+let curtainMode = false;
+let dragging = false;
+
+let previousX = 0;
+let dragX = 0;
+let dragVelocity = 0;
+let activeColumn = 0;
+
+let lastTime = 0;
+
+let IMAGE_WIDTH = 0;
+let IMAGE_HEIGHT = 0;
+
+let initialized = false;
+let pendingTears = 0;
+
+let reverseLoopPlaying = false;
+let reverseLoopStart = 0;
+
+let audioStarted = false;
+
+let shakeStart = 0;
+let shakeDuration = 0;
+
+let curtainHintShown = false;
+
+const pieces = [];
+const fallingPieces = [];
+const reversePieces = [];
+
+let posterImage = null;
+let maskImage = null;
+
+
+/* ==========================================
+   힘 단계 숫자 이미지
+========================================== */
+
+const powerNumber = document.createElement("img");
+
+powerNumber.id = "powerNumber";
+powerNumber.alt = "현재 힘 단계";
+powerNumber.draggable = false;
+
+layout.appendChild(powerNumber);
+
+
+/* ==========================================
+   힘 버튼 / 숫자 위치 및 표시
+========================================== */
+
+function updatePowerUI() {
+
+  if (!layout) return;
+
+  const posterRect = poster.getBoundingClientRect();
+  const layoutRect = layout.getBoundingClientRect();
+
+  const buttonHeight = powerControl.offsetHeight;
+
+  const top =
+    posterRect.top -
+    layoutRect.top -
+    buttonHeight -
+    8;
+
+  // 포스터 왼쪽 끝
+  powerControl.style.left =
+  `${posterRect.left - layoutRect.left +
+  (posterRect.width - powerControl.offsetWidth) / 2}px`;
+
+  powerControl.style.top =
+    `${top}px`;
+
+  // 현재 힘 단계 이미지
+  const level = Math.max(
+    1,
+    Math.min(MAX_POWER, power)
+  );
+
+  if (powerNumber.dataset.level !== String(level)) {
+
+    powerNumber.src = POWER_IMAGES[level - 1];
+
+    powerNumber.dataset.level = String(level);
+
+  }
+
+  // 포스터 오른쪽 끝
+  powerNumber.style.left =
+    `${posterRect.right - layoutRect.left - powerNumber.offsetWidth}px`;
+
+  powerNumber.style.top =
+    `${top + (buttonHeight - powerNumber.offsetHeight) / 2}px`;
+
+  const visible =
+    powerControl.classList.contains("visible");
+
+  powerNumber.classList.toggle(
+    "visible",
+    visible
+  );
+
+}
+
+
+/* ==========================================
+   효과음
+========================================== */
+
+const buttonClickSound = new Audio(
+  new URL("./click.mp3", import.meta.url).href
+);
+
+buttonClickSound.preload = "auto";
+buttonClickSound.volume = 0.45;
+
+const paperTearSound = new Audio(
+  new URL("./papertear.mp3", import.meta.url).href
+);
+
+paperTearSound.preload = "auto";
+paperTearSound.volume = 0.55;
+
+
+function playPaperTearSound() {
+
+  paperTearSound.pause();
+  paperTearSound.currentTime = 0;
+
+  paperTearSound.play().catch(error => {
+    console.warn("종이 효과음 재생 실패:", error);
+  });
+
+}
+
+
+/* ==========================================
+   힘 버튼 피드백
+========================================== */
+
+function playPowerButtonFeedback() {
+
+  const image = powerControl.querySelector("img");
+
+  if (image) {
+
+    image.animate(
+      [
+        { transform: "scale(1)" },
+        { transform: "scale(0.94)" },
+        { transform: "scale(1.035)" },
+        { transform: "scale(1)" }
+      ],
+      {
+        duration: 280,
+        easing: "ease-out"
+      }
+    );
+
+  }
+
+  buttonClickSound.pause();
+  buttonClickSound.currentTime = 0;
+
+  buttonClickSound.play().catch(error => {
+    console.warn("버튼 효과음 재생 실패:", error);
+  });
+
+}
+
+
+/* ==========================================
+   힘 단계 해금
+========================================== */
+
+function getMaxUnlockedPower() {
+
+  let unlocked = 1;
+
+  for (const threshold of POWER_UNLOCK_THRESHOLDS) {
+
+    if (removedCount >= threshold) {
+      unlocked++;
+    }
+
+  }
+
+  return Math.min(unlocked, MAX_POWER);
+
+}
+
+
+/* ==========================================
+   힘 버튼 클릭
+========================================== */
+
+plusButton.addEventListener("click", event => {
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const maxAllowedPower = curtainMode
+    ? MAX_POWER
+    : getMaxUnlockedPower();
+
+  if (power >= maxAllowedPower) return;
+
+  power = Math.min(maxAllowedPower, power + 1);
+
+  playPowerButtonFeedback();
+  updatePowerUI();
+
+  console.log("현재 힘:", power);
+
+});
+
+
+minusButton.addEventListener("click", event => {
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (power <= 1) return;
+
+  power = Math.max(1, power - 1);
+
+  playPowerButtonFeedback();
+  updatePowerUI();
+
+  console.log("현재 힘:", power);
+
+});
+
+
+/* ==========================================
+   음악
 ========================================== */
 
 const curtainAudio = new Audio(
@@ -263,36 +324,22 @@ const curtainAudio = new Audio(
 );
 
 curtainAudio.preload = "auto";
-
 curtainAudio.loop = false;
-
 curtainAudio.volume = 0;
 
-let audioStarted = false;
-
-
-/* ==========================================
-   음악 시작
-========================================== */
 
 function startCurtainAudio() {
 
-  if (audioStarted) return;
-
-  if (reverseLoopPlaying) return;
+  if (audioStarted || reverseLoopPlaying) return;
 
   audioStarted = true;
-
   curtainAudio.muted = false;
 
   curtainAudio.play().catch(error => {
 
     audioStarted = false;
 
-    console.error(
-      "음악 재생 실패:",
-      error
-    );
+    console.error("음악 재생 실패:", error);
 
   });
 
@@ -300,7 +347,7 @@ function startCurtainAudio() {
 
 
 /* ==========================================
-   커튼 움직임에 따른 음량 계산
+   커튼 움직임에 따른 음량
 ========================================== */
 
 function updateCurtainAudio() {
@@ -316,7 +363,6 @@ function updateCurtainAudio() {
   if (!dragging) {
 
     curtainAudio.muted = true;
-
     curtainAudio.volume = 0;
 
     return;
@@ -336,10 +382,7 @@ function updateCurtainAudio() {
 
   const openingRatio = Math.min(
     1,
-    Math.max(
-      0,
-      opening / maxOpening
-    )
+    Math.max(0, opening / maxOpening)
   );
 
   const powerBoost =
@@ -354,111 +397,7 @@ function updateCurtainAudio() {
 
 
 /* ==========================================
-   설정
-========================================== */
-
-const BASE_WIDTH = 960;
-
-const BASE_HEIGHT = 1600;
-
-const POWER_UNLOCK_COUNT = 5;
-
-const MAX_POWER = 5;
-// 힘 단계별 해금 기준
-
-const POWER_UNLOCK_THRESHOLDS = [5, 15, 26, 45];
-
-// 현재 해금된 최대 힘 단계 계산
-
-function getMaxUnlockedPower() {
-
-  let unlocked = 1;
-
-  for (const threshold of POWER_UNLOCK_THRESHOLDS) {
-
-    if (removedCount >= threshold) {
-
-      unlocked++;
-
-    }
-
-  }
-
-  return Math.min(unlocked, MAX_POWER);
-
-}
-
-const STRIP_COUNT = 24;
-
-const SEGMENT_COUNT = 90;
-// 포스터 양옆으로 확장할 공간
-
-const CURTAIN_SIDE_PADDING = 1.6;
-
-const USE_GRID_FALLBACK = true;
-
-const USE_IMAGE_MASK = true;
-
-
-/* ==========================================
-   REVERSE LOOP 설정
-========================================== */
-
-// 종이가 완전히 복원되는 시간
-const REVERSE_LOOP_DURATION = 2300;
-
-// 종이 조각 사이의 복원 시간차
-const REVERSE_LOOP_STAGGER = 800;
-
-// 복원 시작 여부
-let reverseLoopPlaying = false;
-
-// 복원 시작 시간
-let reverseLoopStart = 0;
-
-// 복원되는 종이 조각
-const reversePieces = [];
-
-
-/* ==========================================
-   상태
-========================================== */
-
-let power = 1;
-
-let removedCount = 0;
-
-let curtainMode = false;
-
-let dragging = false;
-
-let previousX = 0;
-
-let dragX = 0;
-
-let dragVelocity = 0;
-
-let activeColumn = 0;
-
-let lastTime = 0;
-
-let IMAGE_WIDTH = 0;
-
-let IMAGE_HEIGHT = 0;
-
-let initialized = false;
-
-let pendingTears = 0;
-
-// 뜯을 종이
-const pieces = [];
-
-// 떨어지는 종이
-const fallingPieces = [];
-
-
-/* ==========================================
-   이미지 로딩 함수
+   이미지 로딩
 ========================================== */
 
 function loadImage(src) {
@@ -470,13 +409,7 @@ function loadImage(src) {
     img.onload = () => resolve(img);
 
     img.onerror = () => {
-
-      reject(
-        new Error(
-          `이미지를 불러오지 못했습니다: ${src}`
-        )
-      );
-
+      reject(new Error(`이미지 로딩 실패: ${src}`));
     };
 
     img.src = src;
@@ -487,262 +420,181 @@ function loadImage(src) {
 
 
 /* ==========================================
-   이미지 객체
+   종이 표면
 ========================================== */
 
-let posterImage = null;
-
-let maskImage = null;
+const paperSurface = document.createElement("canvas");
+const paperCtx = paperSurface.getContext("2d");
 
 
 /* ==========================================
-   종이 표면 캔버스
-========================================== */
-
-const paperSurface =
-  document.createElement("canvas");
-
-const paperCtx =
-  paperSurface.getContext("2d");
-
-
-/* ==========================================
-   직사각형 격자
+   격자 좌표
 ========================================== */
 
 const GRID_X = [
-
-  18,
-  62,
-  108,
-  153,
-  199,
-  245,
-  290,
-  336,
-  380,
-  425,
-  470,
-
-  490,
-  535,
-  580,
-  625,
-  670,
-  714,
-  759,
-  804,
-  850,
-  898,
-  941
-
+  18, 62, 108, 153, 199, 245,
+  290, 336, 380, 425, 470,
+  490, 535, 580, 625, 670,
+  714, 759, 804, 850, 898, 941
 ];
 
-
 const GRID_ROWS = [
-
   [28, 129],
   [137, 236],
-
   [351, 450],
   [461, 557],
-
   [571, 670],
   [681, 780],
-
   [814, 914],
   [921, 1019],
-
   [1027, 1126],
   [1137, 1235],
-
   [1247, 1345],
   [1357, 1456],
-
   [1468, 1585]
-
 ];
 
 
 /* ==========================================
-   예비 좌표
+   예비 뜯기 영역
 ========================================== */
 
 const FALLBACK_ROWS = [
 
-  [
-    28, 129,
-    [
-      [200,246], [246,290],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850],
-      [850,898], [898,941]
-    ]
-  ],
+  [28, 129, [
+    [200,246], [246,290],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850],
+    [850,898], [898,941]
+  ]],
 
-  [
-    137, 236,
-    [
-      [18,62], [62,108],
-      [108,153], [153,199],
-      [290,336], [336,380],
-      [380,425], [425,470],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850],
-      [850,898], [898,941]
-    ]
-  ],
+  [137, 236, [
+    [18,62], [62,108],
+    [108,153], [153,199],
+    [290,336], [336,380],
+    [380,425], [425,470],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850],
+    [850,898], [898,941]
+  ]],
 
-  [
-    351, 450,
-    [
-      [18,62], [62,108],
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336], [336,380],
-      [425,470],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850]
-    ]
-  ],
+  [351, 450, [
+    [18,62], [62,108],
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336], [336,380],
+    [425,470],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850]
+  ]],
 
-  [
-    461, 557,
-    [
-      [18,62], [62,108],
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336], [336,380],
-      [380,425], [425,470]
-    ]
-  ],
+  [461, 557, [
+    [18,62], [62,108],
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336], [336,380],
+    [380,425], [425,470]
+  ]],
 
-  [
-    571, 670,
-    [
-      [18,62],
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336], [336,380],
-      [425,470],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850],
-      [850,898], [898,941]
-    ]
-  ],
+  [571, 670, [
+    [18,62],
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336], [336,380],
+    [425,470],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850],
+    [850,898], [898,941]
+  ]],
 
-  [
-    681, 780,
-    [
-      [18,62],
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336], [336,380],
-      [425,470],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850],
-      [850,898], [898,941]
-    ]
-  ],
+  [681, 780, [
+    [18,62],
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336], [336,380],
+    [425,470],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850],
+    [850,898], [898,941]
+  ]],
 
-  [
-    814, 914,
-    [
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850]
-    ]
-  ],
+  [814, 914, [
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850]
+  ]],
 
-  [
-    921, 1019,
-    [
-      [18,62], [62,108],
-      [425,470],
-      [490,535], [535,580],
-      [898,941]
-    ]
-  ],
+  [921, 1019, [
+    [18,62], [62,108],
+    [425,470],
+    [490,535], [535,580],
+    [898,941]
+  ]],
 
-  [
-    1027, 1126,
-    [
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850]
-    ]
-  ],
+  [1027, 1126, [
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850]
+  ]],
 
-  [
-    1137, 1235,
-    [
-      [490,535],
-      [580,625], [625,670],
-      [670,714],
-      [759,804], [804,850],
-      [850,898], [898,941]
-    ]
-  ],
+  [1137, 1235, [
+    [490,535],
+    [580,625], [625,670],
+    [670,714],
+    [759,804], [804,850],
+    [850,898], [898,941]
+  ]],
 
-  [
-    1247, 1345,
-    [
-      [18,62], [62,108],
-      [108,153], [153,199],
-      [199,245], [245,290],
-      [290,336], [336,380],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850]
-    ]
-  ],
+  [1247, 1345, [
+    [18,62], [62,108],
+    [108,153], [153,199],
+    [199,245], [245,290],
+    [290,336], [336,380],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850]
+  ]],
 
-  [
-    1357, 1456,
-    [
-      [200,246], [246,290],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850]
-    ]
-  ],
+  [1357, 1456, [
+    [200,246], [246,290],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850]
+  ]],
 
-  [
-    1468, 1585,
-    [
-      [200,246], [246,290],
-      [290,336], [336,380],
-      [380,425], [425,470],
-      [490,535], [535,580],
-      [580,625], [625,670],
-      [670,714], [714,759],
-      [759,804], [804,850],
-      [850,898], [898,941]
-    ]
-  ]
+  [1468, 1585, [
+    [200,246], [246,290],
+    [290,336], [336,380],
+    [380,425], [425,470],
+    [490,535], [535,580],
+    [580,625], [625,670],
+    [670,714], [714,759],
+    [759,804], [804,850],
+    [850,898], [898,941]
+  ]]
 
 ];
 
 
 /* ==========================================
-   색상 계산
+   픽셀 분석
 ========================================== */
 
 function getPixel(data, width, x, y) {
@@ -752,8 +604,7 @@ function getPixel(data, width, x, y) {
     Math.min(width - 1, Math.round(x))
   );
 
-  const height =
-    data.length / 4 / width;
+  const height = data.length / 4 / width;
 
   y = Math.max(
     0,
@@ -791,27 +642,17 @@ function createGridCandidates() {
 
   const candidates = [];
 
-  const sx =
-    IMAGE_WIDTH / BASE_WIDTH;
-
-  const sy =
-    IMAGE_HEIGHT / BASE_HEIGHT;
+  const sx = IMAGE_WIDTH / BASE_WIDTH;
+  const sy = IMAGE_HEIGHT / BASE_HEIGHT;
 
   const columns = [];
 
-  for (
-    let i = 0;
-    i < GRID_X.length - 1;
-    i++
-  ) {
+  for (let i = 0; i < GRID_X.length - 1; i++) {
 
     const left = GRID_X[i];
-
     const right = GRID_X[i + 1];
 
-    if (right - left > 55) {
-      continue;
-    }
+    if (right - left > 55) continue;
 
     columns.push([left, right]);
 
@@ -845,24 +686,22 @@ function createGridCandidates() {
 
 
 /* ==========================================
-   마스크 기반 뜯기 영역 판별
+   마스크로 뜯기 영역 판별
 ========================================== */
 
 function detectPiecesFromMask() {
 
   if (!maskImage) return false;
 
-  const maskCanvas =
-    document.createElement("canvas");
+  const maskCanvas = document.createElement("canvas");
 
   maskCanvas.width = IMAGE_WIDTH;
-
   maskCanvas.height = IMAGE_HEIGHT;
 
-  const maskCtx =
-    maskCanvas.getContext("2d", {
-      willReadFrequently: true
-    });
+  const maskCtx = maskCanvas.getContext(
+    "2d",
+    { willReadFrequently: true }
+  );
 
   maskCtx.drawImage(
     maskImage,
@@ -872,98 +711,72 @@ function detectPiecesFromMask() {
     IMAGE_HEIGHT
   );
 
-  const imageData =
-    maskCtx.getImageData(
-      0,
-      0,
-      IMAGE_WIDTH,
-      IMAGE_HEIGHT
-    );
+  const imageData = maskCtx.getImageData(
+    0,
+    0,
+    IMAGE_WIDTH,
+    IMAGE_HEIGHT
+  );
 
-  const pixels =
-    imageData.data;
+  const pixels = imageData.data;
+  const candidates = createGridCandidates();
 
-  const candidates =
-    createGridCandidates();
+  if (candidates.length === 0) return false;
 
-  if (candidates.length === 0) {
-    return false;
-  }
+  const samples = candidates.map(piece => {
 
-  const samples =
-    candidates.map(piece => {
+    let brightness = 0;
+    let alpha = 0;
+    let count = 0;
 
-      let brightness = 0;
+    for (let iy = 1; iy <= 3; iy++) {
 
-      let alpha = 0;
+      for (let ix = 1; ix <= 3; ix++) {
 
-      let count = 0;
+        const x =
+          piece.x + piece.width * ix / 4;
 
-      for (
-        let iy = 1;
-        iy <= 3;
-        iy++
-      ) {
+        const y =
+          piece.y + piece.height * iy / 4;
 
-        for (
-          let ix = 1;
-          ix <= 3;
-          ix++
-        ) {
+        const color = getPixel(
+          pixels,
+          IMAGE_WIDTH,
+          x,
+          y
+        );
 
-          const x =
-            piece.x +
-            piece.width * ix / 4;
+        brightness += luminance(color);
+        alpha += color[3];
 
-          const y =
-            piece.y +
-            piece.height * iy / 4;
-
-          const color = getPixel(
-            pixels,
-            IMAGE_WIDTH,
-            x,
-            y
-          );
-
-          brightness +=
-            luminance(color);
-
-          alpha +=
-            color[3];
-
-          count++;
-
-        }
+        count++;
 
       }
 
-      return {
+    }
 
-        ...piece,
+    return {
 
-        brightness:
-          brightness / count,
+      ...piece,
 
-        alpha:
-          alpha / count
+      brightness: brightness / count,
+      alpha: alpha / count
 
-      };
+    };
 
-    });
-
+  });
 
   const brightnessValues =
     samples.map(s => s.brightness);
+
+  const alphaValues =
+    samples.map(s => s.alpha);
 
   const minBrightness =
     Math.min(...brightnessValues);
 
   const maxBrightness =
     Math.max(...brightnessValues);
-
-  const alphaValues =
-    samples.map(s => s.alpha);
 
   const minAlpha =
     Math.min(...alphaValues);
@@ -973,9 +786,7 @@ function detectPiecesFromMask() {
 
   let selected = [];
 
-  if (
-    maxAlpha - minAlpha > 80
-  ) {
+  if (maxAlpha - minAlpha > 80) {
 
     const threshold =
       (maxAlpha + minAlpha) / 2;
@@ -984,11 +795,7 @@ function detectPiecesFromMask() {
       s => s.alpha < threshold
     );
 
-  }
-
-  else if (
-    maxBrightness - minBrightness > 15
-  ) {
+  } else if (maxBrightness - minBrightness > 15) {
 
     const threshold =
       (maxBrightness + minBrightness) / 2;
@@ -1001,12 +808,9 @@ function detectPiecesFromMask() {
 
   if (
     selected.length < 5 ||
-    selected.length >
-      candidates.length * 0.95
+    selected.length > candidates.length * 0.95
   ) {
-
     return false;
-
   }
 
   pieces.length = 0;
@@ -1035,18 +839,15 @@ function detectPiecesFromMask() {
 
 
 /* ==========================================
-   예비 좌표 사용
+   예비 좌표
 ========================================== */
 
 function createFallbackPieces() {
 
   pieces.length = 0;
 
-  const sx =
-    IMAGE_WIDTH / BASE_WIDTH;
-
-  const sy =
-    IMAGE_HEIGHT / BASE_HEIGHT;
+  const sx = IMAGE_WIDTH / BASE_WIDTH;
+  const sy = IMAGE_HEIGHT / BASE_HEIGHT;
 
   FALLBACK_ROWS.forEach(
     ([top, bottom, columns]) => {
@@ -1085,31 +886,21 @@ function createPieces() {
 
   let detected = false;
 
-  if (
-    USE_IMAGE_MASK &&
-    maskImage
-  ) {
+  if (maskImage) {
 
     try {
 
-      detected =
-        detectPiecesFromMask();
+      detected = detectPiecesFromMask();
 
     } catch (error) {
 
-      console.warn(
-        "마스크 분석 실패:",
-        error
-      );
+      console.warn("마스크 분석 실패:", error);
 
     }
 
   }
 
-  if (
-    !detected &&
-    USE_GRID_FALLBACK
-  ) {
+  if (!detected) {
 
     createFallbackPieces();
 
@@ -1135,11 +926,8 @@ function updatePaperSurface() {
 
   if (!posterImage) return;
 
-  paperSurface.width =
-    IMAGE_WIDTH;
-
-  paperSurface.height =
-    IMAGE_HEIGHT;
+  paperSurface.width = IMAGE_WIDTH;
+  paperSurface.height = IMAGE_HEIGHT;
 
   paperCtx.clearRect(
     0,
@@ -1196,18 +984,15 @@ function resizeCanvas() {
     2
   );
 
-  // 포스터 좌우로 넉넉한 공간 확보
   const sideWidth =
     rect.width * CURTAIN_SIDE_PADDING;
 
   const totalWidth =
     rect.width + sideWidth * 2;
 
-  // 실제 캔버스 크기 확장
   canvas.style.width = `${totalWidth}px`;
   canvas.style.height = `${rect.height}px`;
 
-  // 원래 포스터를 캔버스 중앙에 배치
   canvas.style.left = `${-sideWidth}px`;
   canvas.style.top = "0px";
 
@@ -1217,9 +1002,6 @@ function resizeCanvas() {
 
   poster.style.overflow = "visible";
 
-  const layout =
-    poster.closest(".poster-layout");
-
   if (layout) {
     layout.style.overflow = "visible";
   }
@@ -1227,7 +1009,6 @@ function resizeCanvas() {
   canvas.width = Math.round(totalWidth * dpr);
   canvas.height = Math.round(rect.height * dpr);
 
-  // 원래 포스터 좌표계를 중앙으로 이동
   const scale = canvas.height / IMAGE_HEIGHT;
 
   ctx.setTransform(
@@ -1239,13 +1020,15 @@ function resizeCanvas() {
     0
   );
 
+  updatePowerUI();
+
   render();
 
 }
 
 
 /* ==========================================
-   커튼 휘어짐 계산
+   커튼 휘어짐
 ========================================== */
 
 function getBendOffset(x, y) {
@@ -1264,11 +1047,10 @@ function getBendOffset(x, y) {
       -(distance * distance) / spread
     );
 
-  const normalizedY =
-    Math.max(
-      0,
-      (y / IMAGE_HEIGHT - 0.05) / 0.95
-    );
+  const normalizedY = Math.max(
+    0,
+    (y / IMAGE_HEIGHT - 0.05) / 0.95
+  );
 
   const pullStrength =
     1 + (power - 1) * 0.5;
@@ -1284,7 +1066,7 @@ function getBendOffset(x, y) {
 
 
 /* ==========================================
-   움직이는 커튼 그리기
+   움직이는 커튼
 ========================================== */
 
 function drawMovingPaper() {
@@ -1295,29 +1077,17 @@ function drawMovingPaper() {
   const segmentHeight =
     IMAGE_HEIGHT / SEGMENT_COUNT;
 
-  for (
-    let col = 0;
-    col < STRIP_COUNT;
-    col++
-  ) {
+  for (let col = 0; col < STRIP_COUNT; col++) {
 
-    for (
-      let row = 0;
-      row < SEGMENT_COUNT;
-      row++
-    ) {
+    for (let row = 0; row < SEGMENT_COUNT; row++) {
 
-      const x =
-        col * stripWidth;
+      const x = col * stripWidth;
+      const y = row * segmentHeight;
 
-      const y =
-        row * segmentHeight;
-
-      const offset =
-        getBendOffset(
-          x + stripWidth / 2,
-          y + segmentHeight / 2
-        );
+      const offset = getBendOffset(
+        x + stripWidth / 2,
+        y + segmentHeight / 2
+      );
 
       ctx.drawImage(
 
@@ -1386,19 +1156,17 @@ function drawFallingPiece(piece) {
 
 
 /* ==========================================
-   REVERSE LOOP
-   되돌아오는 종이 그리기
+   마지막 복원 애니메이션
+
+   구멍이 아래에서 위로 차오름
+   종이 조각은 날아오지 않음
 ========================================== */
 
 function drawReverseLoop(time) {
-
   const elapsed = time - reverseLoopStart;
+  const riseDuration = REVERSE_LOOP_DURATION - REVERSE_LOOP_STAGGER;
 
-  const moveDuration =
-    REVERSE_LOOP_DURATION -
-    REVERSE_LOOP_STAGGER;
-
-  // 1. 기존에 종이를 뜯어서 구멍이 생긴 포스터 표시
+  // 구멍이 뚫린 포스터 유지
   ctx.drawImage(
     paperSurface,
     0,
@@ -1407,52 +1175,28 @@ function drawReverseLoop(time) {
     IMAGE_HEIGHT
   );
 
-  // 2. 뜯어낸 직사각형 조각들만 원래 자리로 복귀
   reversePieces.forEach(item => {
-
     const localTime = elapsed - item.delay;
+
+    if (localTime < 0) return;
 
     const t = Math.max(
       0,
-      Math.min(1, localTime / moveDuration)
+      Math.min(1, localTime / riseDuration)
     );
 
-    const eased =
-      1 - Math.pow(1 - t, 3);
-
+    // 빠르게 올라오다가 원래 위치에서 부드럽게 멈춤
+    const eased = 1 - Math.pow(1 - t, 3);
     const piece = item.piece;
 
-    // 복원이 완료된 조각은 원래 위치에 고정
-    if (t >= 1) {
+    const inv = 1 - eased;
 
-      ctx.drawImage(
-        posterImage,
-        piece.x,
-        piece.y,
-        piece.width,
-        piece.height,
-        piece.x,
-        piece.y,
-        piece.width,
-        piece.height
-      );
+    // 종이마다 다른 방향에서 올라오기
+    const currentX = piece.x + item.offsetX * inv;
+    const currentY = piece.y + item.offsetY * inv;
 
-      return;
-    }
-
-    // 아직 복귀 시간이 되지 않은 조각은 대기
-    if (localTime < 0) return;
-
-    const currentX =
-      item.startX +
-      (piece.x - item.startX) * eased;
-
-    const currentY =
-      item.startY +
-      (piece.y - item.startY) * eased;
-
-    const rotation =
-      item.startRotation * (1 - eased);
+    // 회전하다가 원래 각도로 복귀
+    const rotation = item.rotation * inv;
 
     ctx.save();
 
@@ -1463,15 +1207,17 @@ function drawReverseLoop(time) {
 
     ctx.rotate(rotation);
 
-    // 원래 클릭해서 뜯어냈던 부분만 잘라서 그림
+    ctx.globalAlpha = Math.min(
+      1,
+      Math.max(0, t * 5)
+    );
+
     ctx.drawImage(
       posterImage,
-
       piece.x,
       piece.y,
       piece.width,
       piece.height,
-
       -piece.width / 2,
       -piece.height / 2,
       piece.width,
@@ -1479,10 +1225,9 @@ function drawReverseLoop(time) {
     );
 
     ctx.restore();
-
   });
-
 }
+
 
 /* ==========================================
    화면 그리기
@@ -1492,7 +1237,6 @@ function render() {
 
   if (!initialized) return;
 
-  // 확장된 캔버스 전체 지우기
   const scale =
     canvas.height / IMAGE_HEIGHT;
 
@@ -1506,22 +1250,20 @@ function render() {
     IMAGE_HEIGHT
   );
 
-  // 종이가 돌아오는 애니메이션
   if (reverseLoopPlaying) {
 
     drawReverseLoop(performance.now());
 
     return;
+
   }
 
   if (curtainMode) {
 
-    // 커튼 모드에서는 경계 제한 없이 그리기
     drawMovingPaper();
 
   } else {
 
-    // 평소에는 원래 포스터 표시
     ctx.drawImage(
       paperSurface,
       0,
@@ -1532,9 +1274,7 @@ function render() {
 
   }
 
-  fallingPieces.forEach(
-    drawFallingPiece
-  );
+  fallingPieces.forEach(drawFallingPiece);
 
 }
 
@@ -1545,18 +1285,13 @@ function render() {
 
 function tearPiece(piece) {
 
-  if (
-    !piece ||
-    piece.removed
-  ) {
+  if (!piece || piece.removed) {
     return false;
   }
 
   piece.removed = true;
-
   piece.pending = false;
 
-  // 뜯은 순서 저장
   piece.tearOrder = removedCount;
 
   removedCount++;
@@ -1586,35 +1321,33 @@ function tearPiece(piece) {
 
   updatePaperSurface();
 
-  if (
-    removedCount >= POWER_UNLOCK_COUNT
-  ) {
+  // 다섯 칸 뜯으면 버튼 등장
+  if (removedCount >= POWER_UNLOCK_COUNT) {
 
-    powerControl.classList.add(
-      "visible"
-    );
+    powerControl.classList.add("visible");
+
+    updatePowerUI();
 
   }
 
-// 모든 종이를 뜯으면 커튼 모드
-if (
-  removedCount === pieces.length
-) {
+  // 모든 종이를 뜯으면 커튼 모드
+  if (removedCount === pieces.length) {
 
-  setTimeout(() => {
+    setTimeout(() => {
 
-    curtainMode = true;
+      curtainMode = true;
 
-    // 커튼 단계 진입 시 힘 초기화
-    power = 1;
+      power = 1;
 
-    canvas.style.cursor = "grab";
+      updatePowerUI();
 
-    startFinalShake();
+      canvas.style.cursor = "grab";
 
-  }, 500);
+      startFinalShake();
 
-}
+    }, 500);
+
+  }
 
   return true;
 
@@ -1628,11 +1361,7 @@ if (
 function getTearCount() {
 
   const counts = [
-    1,
-    3,
-    6,
-    10,
-    16
+    1, 3, 6, 10, 16
   ];
 
   return counts[power - 1];
@@ -1641,28 +1370,22 @@ function getTearCount() {
 
 
 /* ==========================================
-   클릭한 직사각형 찾기
+   클릭한 종이 찾기
 ========================================== */
 
 function findPiece(x, y) {
 
   return pieces.find(piece => {
 
-    if (
-      piece.removed ||
-      piece.pending
-    ) {
+    if (piece.removed || piece.pending) {
       return false;
     }
 
     return (
-
       x >= piece.x &&
       x <= piece.x + piece.width &&
-
       y >= piece.y &&
       y <= piece.y + piece.height
-
     );
 
   }) || null;
@@ -1671,7 +1394,7 @@ function findPiece(x, y) {
 
 
 /* ==========================================
-   힘에 따라 여러 칸 뜯기
+   여러 칸 뜯기
 ========================================== */
 
 function tearWithPower(centerPiece) {
@@ -1680,23 +1403,18 @@ function tearWithPower(centerPiece) {
 
   playPaperTearSound();
 
-  const count =
-    getTearCount();
+  const count = getTearCount();
 
   const centerX =
-    centerPiece.x +
-    centerPiece.width / 2;
+    centerPiece.x + centerPiece.width / 2;
 
   const centerY =
-    centerPiece.y +
-    centerPiece.height / 2;
+    centerPiece.y + centerPiece.height / 2;
 
   const candidates = pieces
 
-    .filter(
-      piece =>
-        !piece.removed &&
-        !piece.pending
+    .filter(piece =>
+      !piece.removed && !piece.pending
     )
 
     .sort((a, b) => {
@@ -1729,9 +1447,7 @@ function tearWithPower(centerPiece) {
     candidates.slice(0, count);
 
   selected.forEach(piece => {
-
     piece.pending = true;
-
   });
 
   selected.forEach((piece, index) => {
@@ -1750,13 +1466,13 @@ function tearWithPower(centerPiece) {
 
 
 /* ==========================================
-   포스터 좌표 변환
+   포인터 좌표
 ========================================== */
 
 function getPointerPosition(event) {
 
-  // 확장된 캔버스가 아닌 원래 포스터 기준
-  const rect = poster.getBoundingClientRect();
+  const rect =
+    poster.getBoundingClientRect();
 
   return {
 
@@ -1774,7 +1490,7 @@ function getPointerPosition(event) {
 
 
 /* ==========================================
-   터치 / 마우스 시작
+   포인터 시작
 ========================================== */
 
 canvas.addEventListener(
@@ -1784,8 +1500,6 @@ canvas.addEventListener(
     event.preventDefault();
 
     if (!initialized) return;
-
-    // 종이 복원 중에는 조작 불가능
     if (reverseLoopPlaying) return;
 
     const position =
@@ -1799,8 +1513,7 @@ canvas.addEventListener(
 
       startCurtainAudio();
 
-      previousX =
-        event.clientX;
+      previousX = event.clientX;
 
       activeColumn =
         position.x /
@@ -1811,8 +1524,7 @@ canvas.addEventListener(
         event.pointerId
       );
 
-      canvas.style.cursor =
-        "grabbing";
+      canvas.style.cursor = "grabbing";
 
       return;
 
@@ -1824,9 +1536,7 @@ canvas.addEventListener(
     );
 
     if (piece) {
-
       tearWithPower(piece);
-
     }
 
   }
@@ -1842,19 +1552,17 @@ canvas.addEventListener(
   event => {
 
     if (!dragging) return;
-
     if (reverseLoopPlaying) return;
 
     event.preventDefault();
 
     const rect =
-  poster.getBoundingClientRect();
+      poster.getBoundingClientRect();
 
     const dx =
       event.clientX - previousX;
 
-    previousX =
-      event.clientX;
+    previousX = event.clientX;
 
     const scaledDX =
       dx * IMAGE_WIDTH / rect.width;
@@ -1891,9 +1599,7 @@ function endDrag(event) {
   canvas.style.cursor = "grab";
 
   if (
-    canvas.hasPointerCapture(
-      event.pointerId
-    )
+    canvas.hasPointerCapture(event.pointerId)
   ) {
 
     canvas.releasePointerCapture(
@@ -1903,7 +1609,6 @@ function endDrag(event) {
   }
 
   curtainAudio.muted = true;
-
   curtainAudio.volume = 0;
 
 }
@@ -1914,6 +1619,10 @@ canvas.addEventListener(
   endDrag
 );
 
+canvas.addEventListener(
+  "pointercancel",
+  endDrag
+);
 
 canvas.addEventListener(
   "lostpointercapture",
@@ -1922,12 +1631,10 @@ canvas.addEventListener(
     dragging = false;
 
     curtainAudio.muted = true;
-
     curtainAudio.volume = 0;
 
   }
 );
-
 
 window.addEventListener(
   "blur",
@@ -1936,65 +1643,7 @@ window.addEventListener(
     dragging = false;
 
     curtainAudio.muted = true;
-
     curtainAudio.volume = 0;
-
-  }
-);
-
-
-canvas.addEventListener(
-  "pointercancel",
-  endDrag
-);
-
-
-/* ==========================================
-   힘 버튼
-========================================== */
-
-plusButton.addEventListener(
-  "click",
-  event => {
-
-    event.preventDefault();
-
-    event.stopPropagation();
-
-    power = Math.min(
-
-  curtainMode ? MAX_POWER : getMaxUnlockedPower(),
-
-  power + 1
-
-);
-
-    console.log(
-      "현재 힘:",
-      power
-    );
-
-  }
-);
-
-
-minusButton.addEventListener(
-  "click",
-  event => {
-
-    event.preventDefault();
-
-    event.stopPropagation();
-
-    power = Math.max(
-      1,
-      power - 1
-    );
-
-    console.log(
-      "현재 힘:",
-      power
-    );
 
   }
 );
@@ -2004,32 +1653,23 @@ minusButton.addEventListener(
    마지막 자동 흔들림
 ========================================== */
 
-let shakeStart = 0;
-
-let shakeDuration = 0;
-
-
 function startFinalShake() {
 
-  shakeStart =
-    performance.now();
-
+  shakeStart = performance.now();
   shakeDuration = 1500;
 
-  activeColumn =
-    STRIP_COUNT / 2;
+  activeColumn = STRIP_COUNT / 2;
 
 }
 
 
 /* ==========================================
-   REVERSE LOOP START
+   복원 시작
 ========================================== */
 
 function startReverseLoop() {
 
   if (!curtainMode) return;
-
   if (reverseLoopPlaying) return;
 
   reverseLoopPlaying = true;
@@ -2040,50 +1680,38 @@ function startReverseLoop() {
   dragging = false;
 
   dragX = 0;
-
   dragVelocity = 0;
-
   shakeDuration = 0;
 
   curtainAudio.pause();
-
   curtainAudio.muted = true;
-
   curtainAudio.volume = 0;
 
-  canvas.style.cursor =
-    "default";
+  canvas.style.cursor = "default";
 
   // 힘 버튼 숨김
-  powerControl.classList.remove(
-    "visible"
-  );
+  powerControl.classList.remove("visible");
 
-  // 볼륨 안내 이미지 숨김
+  updatePowerUI();
+
+  // 볼륨 안내 숨김
   document
     .getElementById("curtainHint")
     ?.remove();
 
   curtainHintShown = false;
 
-  // 기존에 떨어지던 종이 제거
   fallingPieces.length = 0;
 
   // 마지막에 뜯은 종이부터 복원
   const tornPieces = pieces
 
-    .filter(
-      piece => piece.removed
-    )
+    .filter(piece => piece.removed)
 
-    .sort((a, b) => {
-
-      return (
-        (b.tearOrder ?? 0) -
-        (a.tearOrder ?? 0)
-      );
-
-    });
+    .sort((a, b) =>
+      (b.tearOrder ?? 0) -
+      (a.tearOrder ?? 0)
+    );
 
   reversePieces.length = 0;
 
@@ -2091,45 +1719,49 @@ function startReverseLoop() {
     1,
     tornPieces.length - 1
   );
+tornPieces.forEach((piece, index) => {
 
-  tornPieces.forEach(
-    (piece, index) => {
+  const delay =
+    (index / count) * REVERSE_LOOP_STAGGER;
 
-      const delay =
-        (index / count) *
-        REVERSE_LOOP_STAGGER;
+  // 종이마다 서로 다른 움직임 생성
+  const seed =
+    piece.x * 0.037 +
+    piece.y * 0.019 +
+    piece.tearOrder * 1.7;
 
-      reversePieces.push({
+  const variation = Math.sin(seed * 2.31);
 
-        piece,
+  // 좌우로 흩어진 위치에서 출발
+  const offsetX =
+    variation * IMAGE_WIDTH * 0.65;
 
-        delay,
+  // 아래쪽 서로 다른 높이에서 출발
+  const offsetY =
+    IMAGE_HEIGHT *
+    (0.55 + 0.7 * (
+      0.5 + 0.5 * Math.sin(seed * 1.27)
+    ));
 
-        // 화면 아래에서 올라옴
-        startX:
-          piece.x +
-          (Math.random() - 0.5) *
-          IMAGE_WIDTH * 0.5,
+  // 각 종이의 회전 각도
+  const rotation =
+    Math.sin(seed * 3.13) * Math.PI * 1.3;
 
-        startY:
-          IMAGE_HEIGHT *
-          (1.05 + Math.random() * 0.18),
+  reversePieces.push({
+    piece,
+    delay,
+    offsetX,
+    offsetY,
+    rotation
+  });
 
-        // 회전된 상태에서 복원
-        startRotation:
-          (Math.random() - 0.5) *
-          Math.PI * 1.5
-
-      });
-
-    }
-  );
+});
 
 }
 
 
 /* ==========================================
-   REVERSE LOOP COMPLETE
+   복원 완료
 ========================================== */
 
 function finishReverseLoop() {
@@ -2140,13 +1772,10 @@ function finishReverseLoop() {
 
   reversePieces.length = 0;
 
-  // 모든 종이 복원
   pieces.forEach(piece => {
 
     piece.removed = false;
-
     piece.pending = false;
-
     piece.tearOrder = undefined;
 
   });
@@ -2154,58 +1783,39 @@ function finishReverseLoop() {
   fallingPieces.length = 0;
 
   removedCount = 0;
-
   pendingTears = 0;
 
-  // 힘 초기화
   power = 1;
 
-  // 커튼 모드 종료
   curtainMode = false;
-
   dragging = false;
 
   dragX = 0;
-
   dragVelocity = 0;
-
   shakeDuration = 0;
 
-  // 음악 초기화
   audioStarted = false;
 
   curtainAudio.pause();
-
   curtainAudio.currentTime = 0;
-
   curtainAudio.volume = 0;
-
   curtainAudio.muted = true;
 
-  // 버튼 숨기기
-  powerControl.classList.remove(
-    "visible"
-  );
+  powerControl.classList.remove("visible");
 
-  // 안내 이미지 제거
+  updatePowerUI();
+
   document
     .getElementById("curtainHint")
     ?.remove();
 
   curtainHintShown = false;
 
-  canvas.style.cursor =
-    "pointer";
+  canvas.style.cursor = "pointer";
 
-  // 흰색 포스터 복원
   updatePaperSurface();
 
   render();
-
-  // 다음 반복을 위한 감지
-  requestAnimationFrame(
-    watchCurtainHint
-  );
 
 }
 
@@ -2217,20 +1827,13 @@ function finishReverseLoop() {
 function animate(time) {
 
   const delta = Math.min(
-
     (time - (lastTime || time)) / 1000,
-
     0.04
-
   );
 
   lastTime = time;
 
-
-  /* ========================================
-     종이 낙하
-  ======================================== */
-
+  // 떨어지는 종이
   fallingPieces.forEach(piece => {
 
     piece.velocityY +=
@@ -2257,19 +1860,14 @@ function animate(time) {
 
   });
 
-
-  /* ========================================
-     화면 밖으로 떨어진 종이 제거
-  ======================================== */
-
+  // 화면 밖 종이 제거
   for (
     let i = fallingPieces.length - 1;
     i >= 0;
     i--
   ) {
 
-    const piece =
-      fallingPieces[i];
+    const piece = fallingPieces[i];
 
     if (
       piece.opacity <= 0 ||
@@ -2283,11 +1881,7 @@ function animate(time) {
 
   }
 
-
-  /* ========================================
-     마지막 자동 흔들림
-  ======================================== */
-
+  // 마지막 자동 흔들림
   if (
     curtainMode &&
     !reverseLoopPlaying &&
@@ -2307,13 +1901,9 @@ function animate(time) {
         Math.pow(1 - progress, 2);
 
       dragX =
-
         Math.sin(elapsed * 0.025) *
-
         IMAGE_WIDTH *
-
         0.035 *
-
         fade;
 
     } else {
@@ -2321,18 +1911,13 @@ function animate(time) {
       shakeDuration = 0;
 
       dragX = 0;
-
       dragVelocity = 0;
 
     }
 
   }
 
-
-  /* ========================================
-     손을 놓으면 커튼 복귀
-  ======================================== */
-
+  // 손을 놓으면 커튼 복귀
   if (
     curtainMode &&
     !reverseLoopPlaying &&
@@ -2353,25 +1938,15 @@ function animate(time) {
     ) {
 
       dragX = 0;
-
       dragVelocity = 0;
 
     }
 
   }
 
-
-  /* ========================================
-     음악 볼륨
-  ======================================== */
-
   updateCurtainAudio();
 
-
-  /* ========================================
-     리버스 루프 완료 확인
-  ======================================== */
-
+  // 복원 완료
   if (
     reverseLoopPlaying &&
     time - reverseLoopStart >=
@@ -2381,7 +1956,6 @@ function animate(time) {
     finishReverseLoop();
 
   }
-
 
   render();
 
@@ -2396,19 +1970,14 @@ function animate(time) {
 
 let lastTouchEnd = 0;
 
-
 document.addEventListener(
   "touchend",
   event => {
 
     const now = Date.now();
 
-    if (
-      now - lastTouchEnd <= 300
-    ) {
-
+    if (now - lastTouchEnd <= 300) {
       event.preventDefault();
-
     }
 
     lastTouchEnd = now;
@@ -2417,38 +1986,82 @@ document.addEventListener(
   { passive: false }
 );
 
-
 document.addEventListener(
   "gesturestart",
-  event => {
-
-    event.preventDefault();
-
-  },
+  event => event.preventDefault(),
   { passive: false }
 );
-
 
 document.addEventListener(
   "gesturechange",
-  event => {
-
-    event.preventDefault();
-
-  },
+  event => event.preventDefault(),
   { passive: false }
 );
-
 
 document.addEventListener(
   "touchmove",
-  event => {
-
-    event.preventDefault();
-
-  },
+  event => event.preventDefault(),
   { passive: false }
 );
+
+
+/* ==========================================
+   볼륨 안내 이미지
+========================================== */
+
+function showCurtainHint() {
+
+  if (
+    curtainHintShown &&
+    document.getElementById("curtainHint")
+  ) {
+    return;
+  }
+
+  if (!layout) return;
+
+  curtainHintShown = true;
+
+  document
+    .getElementById("curtainHint")
+    ?.remove();
+
+  const hintImage =
+    document.createElement("img");
+
+  hintImage.id = "curtainHint";
+  hintImage.className = "curtain-hint";
+
+  hintImage.src = new URL(
+    "./volume.png",
+    import.meta.url
+  ).href;
+
+  hintImage.alt = "볼륨 안내";
+  hintImage.draggable = false;
+
+  layout.appendChild(hintImage);
+
+  hintImage.classList.add("visible");
+
+}
+
+
+/* ==========================================
+   커튼 전환 감지
+========================================== */
+
+function watchCurtainHint() {
+
+  if (curtainMode && !reverseLoopPlaying) {
+
+    showCurtainHint();
+
+  }
+
+  requestAnimationFrame(watchCurtainHint);
+
+}
 
 
 /* ==========================================
@@ -2484,23 +2097,19 @@ async function initialize() {
 
     }
 
-    // 종이 조각 생성
     createPieces();
 
-    // 초기 포스터 생성
     updatePaperSurface();
 
     initialized = true;
 
-    // 캔버스 크기
     resizeCanvas();
 
-    // 애니메이션 시작
     requestAnimationFrame(animate);
 
-    console.log(
-      "포스터 초기화 완료"
-    );
+    requestAnimationFrame(watchCurtainHint);
+
+    console.log("포스터 초기화 완료");
 
   } catch (error) {
 
@@ -2523,113 +2132,24 @@ window.addEventListener(
   resizeCanvas
 );
 
-
-/* ==========================================
-   실행
-========================================== */
-
-initialize();
-
-
-/* ==========================================
-   CURTAIN IMAGE HINT
-========================================== */
-
-let curtainHintShown = false;
-
-
-function showCurtainHint() {
-
-  if (
-  curtainHintShown &&
-  document.getElementById("curtainHint")
-) return;
-
-  const layout =
-    document.querySelector(".poster-layout");
-
-  if (!layout) return;
-
-  curtainHintShown = true;
-
-  const oldHint =
-    document.getElementById("curtainHint");
-
-  if (oldHint) {
-    oldHint.remove();
-  }
-
-  const hintImage =
-    document.createElement("img");
-
-  hintImage.id =
-    "curtainHint";
-
-  hintImage.className =
-    "curtain-hint";
-
-  hintImage.src = new URL(
-    "./volume.png",
-    import.meta.url
-  ).href;
-
-  hintImage.alt =
-    "볼륨 안내";
-
-  hintImage.draggable = false;
-
-  hintImage.addEventListener(
-    "error",
-    () => {
-
-      console.error(
-        "볼륨 이미지를 불러오지 못했습니다:",
-        hintImage.src
-      );
-
-    }
-  );
-
-  layout.appendChild(
-    hintImage
-  );
-
-  hintImage.classList.add(
-    "visible"
-  );
-
-}
-
-
-/* ==========================================
-   커튼 전환 감지
-========================================== */
-
-function watchCurtainHint() {
-
-  // 커튼 모드가 시작되면 볼륨 안내 이미지 표시
-
-  if (curtainMode && !reverseLoopPlaying) {
-
-    showCurtainHint();
-
-  }
-
-  requestAnimationFrame(watchCurtainHint);
-
-}
-
-
-requestAnimationFrame(
-  watchCurtainHint
+powerNumber.addEventListener(
+  "load",
+  updatePowerUI
 );
 
 
 /* ==========================================
-   음악 종료 → REVERSE LOOP
+   음악 종료 → 복원
 ========================================== */
 
 curtainAudio.addEventListener(
   "ended",
   startReverseLoop
 );
+
+
+/* ==========================================
+   실행
+========================================== */
+
+initialize();

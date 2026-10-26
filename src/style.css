@@ -28,6 +28,7 @@ body {
   height: 100%;
 }
 
+
 /* =====================================
    전체 화면
 ===================================== */
@@ -35,16 +36,21 @@ body {
 .page {
   position: fixed;
   inset: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   width: 100%;
   height: 100%;
   height: 100dvh;
+
   overflow: hidden;
   background: #ffffff;
+
   touch-action: none;
 }
+
 
 /* =====================================
    포스터 전체 레이아웃
@@ -52,8 +58,10 @@ body {
 
 .poster-layout {
   position: relative;
+
   display: flex;
   flex-direction: column;
+
   align-items: center;
   justify-content: center;
 
@@ -61,25 +69,39 @@ body {
 
   width: 100%;
   height: 100%;
+
   padding: 15px;
+
   overflow: visible;
 
   transform: translateY(-35px);
 }
 
+
 /* =====================================
    힘 버튼
+
+   포스터 왼쪽 상단
 ===================================== */
 
 .power-control {
-  position: relative;
+  position: absolute;
 
   width: 100px;
-  height: 50px;
+  height: 35px;
 
   flex-shrink: 0;
-  align-self: center;
+  align-self: auto;
+
   margin: 0;
+
+  left: 50%;
+  top: 0;
+
+  right: auto;
+  bottom: auto;
+
+  transform: none;
 
   opacity: 0;
   visibility: hidden;
@@ -100,13 +122,59 @@ body {
 
 .power-control img {
   display: block;
+
   width: 110%;
   height: auto;
 
   pointer-events: none;
+
   user-select: none;
   -webkit-user-drag: none;
 }
+
+
+/* =====================================
+   힘 단계 숫자 PNG
+
+   포스터 오른쪽 상단
+===================================== */
+
+#powerNumber {
+  position: absolute;
+
+  width: 14px !important;
+
+  height: 24px !important;
+
+
+
+  object-fit: contain !important;
+  display: block;
+
+  
+
+  object-fit: contain;
+
+  opacity: 0;
+  visibility: hidden;
+
+  pointer-events: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+
+  z-index: 100;
+
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+#powerNumber.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
 
 /* =====================================
    PNG 위의 투명 +/- 클릭 영역
@@ -117,6 +185,7 @@ body {
 
   top: 0;
   bottom: 0;
+
   width: 34%;
 
   margin: 0;
@@ -124,6 +193,7 @@ body {
 
   border: none;
   border-radius: 0;
+
   background: transparent;
 
   cursor: pointer;
@@ -140,12 +210,14 @@ body {
   right: 0;
 }
 
+
 /* =====================================
    포스터
 ===================================== */
 
 .poster {
   position: relative;
+
   width: auto;
 
   height: min(
@@ -154,12 +226,16 @@ body {
   );
 
   aspect-ratio: 960 / 1600;
+
   flex-shrink: 0;
 
-  overflow: visible;;
+  overflow: visible;
+
   background: #ffffff;
+
   touch-action: none;
 }
+
 
 /* =====================================
    아래 글씨 포스터
@@ -170,10 +246,12 @@ body {
   inset: 0;
 
   display: block;
+
   width: 100%;
   height: 100%;
 
   object-fit: fill;
+
   pointer-events: none;
 
   user-select: none;
@@ -181,6 +259,7 @@ body {
 
   z-index: 1;
 }
+
 
 /* =====================================
    인터랙션 캔버스
@@ -191,18 +270,22 @@ body {
   inset: 0;
 
   display: block;
+
   width: 100%;
   height: 100%;
 
   z-index: 10;
 
   pointer-events: auto;
+
   touch-action: none;
+
   cursor: pointer;
 
   user-select: none;
   -webkit-user-select: none;
 }
+
 
 /* =====================================
    모바일
@@ -220,19 +303,27 @@ body {
     width: 100px;
   }
 
+  #powerNumber {
+    width: 13px;
+    height: 23px;
+  }
+
   .poster {
     height: min(
       78dvh,
       calc((100vw - 24px) * 1600 / 960)
     );
   }
+
 }
+
 
 /* =====================================
    작은 화면
 ===================================== */
 
 @media (max-height: 650px) {
+
   .poster {
     height: min(
       73dvh,
@@ -243,25 +334,22 @@ body {
   .power-control {
     width: 125px;
   }
+
 }
 
-/* =====================================
-   CURTAIN IMAGE HINT
 
-   커튼 전환 후 PNG 이미지 표시
-   애니메이션 없음
+/* =====================================
+   커튼 볼륨 안내 이미지
 ===================================== */
 
 .curtain-hint {
   position: absolute;
 
-  /* 화면 가로 중앙 */
   left: 50%;
-  bottom: -28px;
+  bottom: -10px;
 
   transform: translateX(-50%);
 
-  /* 이미지 크기 */
   display: block;
 
   width: min(340px, calc(100% - 32px));
@@ -269,13 +357,11 @@ body {
 
   min-height: 48px;
 
-  /* 원본 이미지 비율 유지 */
   object-fit: contain;
 
   margin: 0;
   padding: 0;
 
-  /* 처음에는 숨김 */
   opacity: 0;
   visibility: hidden;
 
@@ -286,52 +372,46 @@ body {
 
   z-index: 20;
 
-  /* 움직임 제거 */
   animation: none;
   transition: none;
 }
-
-/* 커튼으로 전환되면 이미지 표시 */
 
 .curtain-hint.visible {
   opacity: 1;
   visibility: visible;
 }
 
-/* 모바일 이미지 크기 */
+
+/* =====================================
+   모바일 볼륨 안내 이미지
+===================================== */
 
 @media (max-width: 500px) {
+
   .curtain-hint {
     width: 180px;
     bottom: -20px;
   }
+
 }
 
-/* 모바일 안내 이미지 */
 @media (max-width: 700px) {
 
   .curtain-hint {
     position: absolute !important;
 
-    /* 이미지 가로 크기 */
     width: 160px !important;
-
-    /* 이미지 세로 크기 자동 */
     height: auto !important;
 
-    /* 화면 가운데 정렬 */
     left: 50% !important;
 
-    /* 포스터 아래쪽으로 이동 */
     top: auto !important;
     bottom: -10px !important;
 
     transform: translateX(-50%) !important;
 
-    /* 이미지 비율 유지 */
     object-fit: contain !important;
 
-    /* 다른 요소 위에 표시 */
     z-index: 30 !important;
 
     pointer-events: none;
@@ -339,9 +419,10 @@ body {
 
 }
 
-/* ==========================================
-   커튼이 포스터 바깥으로 나오도록 설정
-========================================== */
+
+/* =====================================
+   커튼이 포스터 밖으로 나오도록
+===================================== */
 
 .poster-layout {
   overflow: visible !important;
@@ -353,8 +434,11 @@ body {
 
 #paperCanvas {
   position: absolute !important;
+
   overflow: visible !important;
+
   max-width: none !important;
   max-height: none !important;
+
   transform: none !important;
 }
